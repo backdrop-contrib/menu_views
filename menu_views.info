@@ -1,0 +1,6 @@
+name = Menu Views
+description = "Provides a solution for embedding a view into a menu item. Useful for creating mega menus."
+core = 7.x
+package = "Views"
+dependencies[] = menu
+dependencies[] = views
