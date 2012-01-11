@@ -17,12 +17,12 @@
 */
 function menu_views_menu() {
   return array(
-		'<view>' => array(
-	    'page callback' => 'drupal_not_found',
-	    'access callback' => TRUE, 
-	    'type' => MENU_CALLBACK,
-		),
-	);
+    '<view>' => array(
+      'page callback' => 'drupal_not_found',
+      'access callback' => TRUE, 
+      'type' => MENU_CALLBACK,
+    ),
+  );
 }
 
 /**
@@ -30,54 +30,54 @@ function menu_views_menu() {
  * Render a view inside a menu link.
  */
 function menu_views_menu_link($variables) {
-	$element = $variables['element'];
-	$options = $element['#original_link']['options'];
-	$view_name = isset($options['menu_views']['name']) ? $options['menu_views']['name'] : FALSE;
-	$view_display = isset($options['menu_views']['display']) ? $options['menu_views']['display'] : FALSE;
-	$view_arguments = isset($options['menu_views']['display']) ? $options['menu_views']['display'] : FALSE;
-	if ($view_name) {
+  $element = $variables['element'];
+  $options = $element['#original_link']['options'];
+  $view_name = isset($options['menu_views']['name']) ? $options['menu_views']['name'] : FALSE;
+  $view_display = isset($options['menu_views']['display']) ? $options['menu_views']['display'] : FALSE;
+  $view_arguments = isset($options['menu_views']['display']) ? $options['menu_views']['display'] : FALSE;
+  if ($view_name) {
     $element = $variables['element'];
     $sub_menu = '';
     if ($element['#below']) {
       $sub_menu = drupal_render($element['#below']);
     }
-		$link = '';
-		if ($element['#href'] != '<view>') {
-	  	$link = l($element['#title'], $element['#href'], $element['#localized_options']);
-		}
-		if ($view_display) {
-			// Process arguments
-			if ($view_arguments) {
-				$view_arguments = explode('/', $view_arguments);
-				$nid = NULL;
-		    if ($element['#original_link']['mlid'] != 0) {
-		      $node = menu_link_load($element['#original_link']['mlid']);
-		      $node = menu_get_object('node', 1, $node['link_path']);
-		      if (is_object($node) && $node->nid) {
-		        $nid = $node->nid;
-		      }
-		    }
-				$pnid = NULL;
-		    if ($element['#original_link']['plid'] != 0) {
-		      $parent = menu_link_load($element['#original_link']['plid']);
-		      $parent = menu_get_object('node', 1, $parent['link_path']);
-		      if (is_object($parent) && $parent->nid) {
-		        $pnid = $parent->nid;
-		      }
-		    }
-				foreach ($view_arguments as $key => $argument) {
-					$view_arguments[$key] = t($argument, array('%N' => $nid, '%P', $pnid));
-				}
-			}
-			else {
-				$view_arguments = array();
-			}
-			$view = call_user_func_array('views_embed_view', array_merge(array($view_name, $view_display), $view_arguments));
-			if (!empty($view)) {
-				return '<li' . drupal_attributes($element['#attributes']) . '>' . $link . $view . $sub_menu . "</li>\n";
-			}
-		}
-	}
+    $link = '';
+    if ($element['#href'] != '<view>') {
+      $link = l($element['#title'], $element['#href'], $element['#localized_options']);
+    }
+    if ($view_display) {
+      // Process arguments
+      if ($view_arguments) {
+        $view_arguments = explode('/', $view_arguments);
+        $nid = NULL;
+        if ($element['#original_link']['mlid'] != 0) {
+          $node = menu_link_load($element['#original_link']['mlid']);
+          $node = menu_get_object('node', 1, $node['link_path']);
+          if (is_object($node) && $node->nid) {
+            $nid = $node->nid;
+          }
+        }
+        $pnid = NULL;
+        if ($element['#original_link']['plid'] != 0) {
+          $parent = menu_link_load($element['#original_link']['plid']);
+          $parent = menu_get_object('node', 1, $parent['link_path']);
+          if (is_object($parent) && $parent->nid) {
+            $pnid = $parent->nid;
+          }
+        }
+        foreach ($view_arguments as $key => $argument) {
+          $view_arguments[$key] = t($argument, array('%N' => $nid, '%P', $pnid));
+        }
+      }
+      else {
+        $view_arguments = array();
+      }
+      $view = call_user_func_array('views_embed_view', array_merge(array($view_name, $view_display), $view_arguments));
+      if (!empty($view)) {
+        return '<li' . drupal_attributes($element['#attributes']) . '>' . $link . $view . $sub_menu . "</li>\n";
+      }
+    }
+  }
   // Call the original theme function for normal menu link.
   return theme('menu_views_menu_link_default', $variables);
 }
@@ -97,40 +97,40 @@ function menu_views_theme_registry_alter(&$registry) {
  * Appends the attached view to the title of the menu item
  */
 function menu_views_form_menu_overview_form_alter(&$form, &$form_state) {
-	$elements = element_children($form);
-	foreach ($elements as $mlid) {
-		$element = &$form[$mlid];
-		// Only process menu items
-		if (isset($element['#item'])) {
-			$item = &$element['#item'];
-			$options = $item['options'];
-			$view_name = '';
-			$view_display = '';
-			$view_arguments = '';
-			if (isset($options['menu_views'])) {
-				$view_name = $options['menu_views']['name'];
-			}
-			// Only change the title for attached views
-			if (!empty($view_name)) {
-				$view_display = $options['menu_views']['display'];
-				$view_arguments = !empty($options['menu_views']['arguments']) ? ':' . $options['menu_views']['arguments'] : '';
-				$disabled = $item['hidden'] ? ' (' . t('disabled') . ')' : '';
-				$title = '';
-				if ($item['link_path'] != '<view>') {
-					$title = l($item['title'], $item['href'], $item['localized_options']) . ' ';
-				}
-				$element['title']['#markup'] = $title . 'View: [' . $view_name . ':' . $view_display . $view_arguments . ']'. $disabled;
-			}
-		}
-	}
+  $elements = element_children($form);
+  foreach ($elements as $mlid) {
+    $element = &$form[$mlid];
+    // Only process menu items
+    if (isset($element['#item'])) {
+      $item = &$element['#item'];
+      $options = $item['options'];
+      $view_name = '';
+      $view_display = '';
+      $view_arguments = '';
+      if (isset($options['menu_views'])) {
+        $view_name = $options['menu_views']['name'];
+      }
+      // Only change the title for attached views
+      if (!empty($view_name)) {
+        $view_display = $options['menu_views']['display'];
+        $view_arguments = !empty($options['menu_views']['arguments']) ? ':' . $options['menu_views']['arguments'] : '';
+        $disabled = $item['hidden'] ? ' (' . t('disabled') . ')' : '';
+        $title = '';
+        if ($item['link_path'] != '<view>') {
+          $title = l($item['title'], $item['href'], $item['localized_options']) . ' ';
+        }
+        $element['title']['#markup'] = $title . 'View: [' . $view_name . ':' . $view_display . $view_arguments . ']' . $disabled;
+      }
+    }
+  }
 }
 
 /**
  * Implementation of hook_form_FORM_ID_alter()
  * Change path description. Insert the views selection.
  */
-function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {	
-  $form['link_path']['#description'] .= t(' Enter %view to disable the link and embed only a view.', array('%view' => '<view>')); 
+function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {  
+  $form['link_path']['#description'] .= ' ' . t('Enter %view to disable the link and embed only a view.', array('%view' => '<view>')); 
   $form['options']['menu_views'] = array(
     '#type' => 'fieldset',
     '#title' => t('Embed View'),
@@ -138,14 +138,14 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
     '#collapsed' => FALSE,
     '#prefix' => '<div id="menu-views">',
     '#suffix' => '</div>',
-		'#tree' => TRUE,
+    '#tree' => TRUE,
   );
   $views = drupal_map_assoc(array_keys(views_get_enabled_views()));
-	ksort($views);  
+  ksort($views);  
   $form['options']['menu_views']['name'] = array(
     '#type' => 'select',
     '#title' => t('View'),
-		'#empty_option' => t('- None -'),
+    '#empty_option' => t('- None -'),
     '#description' => t('Select a view to embed.'),
     '#default_value' => isset($form['options']['#value']['menu_views']['name']) ? $form['options']['#value']['menu_views']['name'] : '',
     '#options' => $views,
@@ -173,13 +173,13 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
       '#type' => 'select',
       '#title' => t('Display'),
       '#description' => t('Select a view display to use.'),
-			'#empty_option' => t('- Select a display -'),
+      '#empty_option' => t('- Select a display -'),
       '#default_value' => isset($form['options']['#value']['menu_views']['display']) ? $form['options']['#value']['menu_views']['display'] : '',
       '#options' => $options,
-	    '#ajax' => array(
-	      'callback' => 'menu_views_ajax_callback',
-	      'wrapper' => 'menu-views',
-	    ),
+      '#ajax' => array(
+        'callback' => 'menu_views_ajax_callback',
+        'wrapper' => 'menu-views',
+      ),
     );
   }
   $view_display = FALSE;
@@ -191,24 +191,24 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
   elseif (isset($form['options']['#value']['menu_views']['display'])) {
     $view_display = $form['options']['#value']['menu_views']['display'];
   }
-	if ($view_display) {
-		$form['options']['menu_views']['arguments'] = array(
-			'#type' => 'textfield',
-			'#title' => t('Arguments'),
-			'#description' => t('Enter arguments to pass to the view. You may pass %n for the nid of the link path. You may pass %p for the nid of the parent link path. Separate arguments with /.', array('%n' => '%N', '%p' => '%P')),
-			'#default_value' => isset($form['options']['#value']['menu_views']['arguments']) ? $form['options']['#value']['menu_views']['arguments'] : '',
-		);
-	}
-	// Inject handlers
-	$form['#validate'] = array_merge(array('menu_views_menu_edit_item_validate'), $form['#validate']);
-	$form['#submit'] = array_merge(array('menu_views_menu_edit_item_submit'), $form['#submit']);
+  if ($view_display) {
+    $form['options']['menu_views']['arguments'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Arguments'),
+      '#description' => t('Enter arguments to pass to the view. You may pass %n for the nid of the link path. You may pass %p for the nid of the parent link path. Separate arguments with /.', array('%n' => '%N', '%p' => '%P')),
+      '#default_value' => isset($form['options']['#value']['menu_views']['arguments']) ? $form['options']['#value']['menu_views']['arguments'] : '',
+    );
+  }
+  // Inject handlers
+  $form['#validate'] = array_merge(array('menu_views_menu_edit_item_validate'), $form['#validate']);
+  $form['#submit'] = array_merge(array('menu_views_menu_edit_item_submit'), $form['#submit']);
 }
 
 /**
  * Ajax callback for re-rendering the views embed portion of the form.
  */
 function menu_views_ajax_callback($form, $form_state) {
-	return $form['options']['menu_views'];
+  return $form['options']['menu_views'];
 }
 
 /**
