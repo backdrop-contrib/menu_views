@@ -19,8 +19,8 @@ function menu_views_install() {
 }
 
 /**
- * Updates module weight and grants the 'administer menu views' permission to roles that currently
- * have the 'administer menu' permission.
+ * Updates module weight in system table.
+ * Grants the "administer menu views" permission to roles that currently have the "administer menu" permission.
  */
 function menu_views_update_7100() {
   db_update('system')
@@ -38,7 +38,7 @@ function menu_views_update_7100() {
 }
 
 /**
- * Replaces the arguments (%N and %P) of menu link items that have attached views with Drupal token equivalents.
+ * Replaces attached view arguments (%N and %P) of menu link items with Token API equivalents.
  */
 function menu_views_update_7101(&$sandbox) {
   if (!isset($sandbox['progress'])) {
