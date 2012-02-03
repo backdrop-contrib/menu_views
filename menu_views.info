@@ -5,4 +5,9 @@ package = "Views"
 dependencies[] = menu
 dependencies[] = views
 
+files[] = menu_views.install
 files[] = menu_views.module
+files[] = includes/menu_views.class.inc
+files[] = includes/form.inc
+files[] = includes/theme.inc
+files[] = includes/tokens.inc

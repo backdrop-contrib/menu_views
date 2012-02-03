@@ -1,0 +1,78 @@
+<?php
+
+/**
+ * @file
+ * Install and update functions for the menu_views module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function menu_views_install() {
+  db_update('system')
+    ->fields(array(
+      'weight' => 100,
+    ))
+    ->condition('type', 'module')
+    ->condition('name', 'menu_views')
+    ->execute();
+}
+
+/**
+ * Updates module weight and grants the 'administer menu views' permission to roles that currently
+ * have the 'administer menu' permission.
+ */
+function menu_views_update_7100() {
+  db_update('system')
+    ->fields(array(
+      'weight' => 100,
+    ))
+    ->condition('type', 'module')
+    ->condition('name', 'menu_views')
+    ->execute();
+  $roles = user_roles(FALSE, 'administer menu');
+  foreach ($roles as $rid => $role) {
+    user_role_grant_permissions($rid, array('administer menu views'));
+  }
+  return t("Every role with the 'administer menu' permission has also received the 'administer menu views' permission.");  
+}
+
+/**
+ * Replaces the arguments (%N and %P) of menu link items that have attached views with Drupal token equivalents.
+ */
+function menu_views_update_7101(&$sandbox) {
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['current_mlid'] = 0;
+    // Only count links that possibly have a key class with a string value in
+    // its serialized options array.
+    $sandbox['max'] = db_query("SELECT COUNT(DISTINCT mlid) FROM {menu_links}")->fetchField();
+  }
+  // Process twenty links at a time.
+  $limit = 20;
+  // Fetch links
+  $links = db_query_range("SELECT mlid, options FROM {menu_links} WHERE mlid > :mlid ORDER BY mlid", 0, $limit, array(':mlid' => $sandbox['current_mlid']))->fetchAllKeyed();
+  foreach ($links as $mlid => $options) {
+    $options = unserialize($options);
+    if (isset($options['menu_views'])) {
+      $arguments = array();
+      if (isset($options['menu_views']['arguments'])) {
+        $arguments = $options['menu_views']['arguments'];
+      }
+      $options['menu_views']['arguments'] = str_replace(array('%N', '%P'), array('[menu-link:node:nid]', '[menu-link:parent:node:nid]'), $arguments);
+      db_update('menu_links')
+        ->fields(array(
+          'options' => serialize($options),
+        ))
+        ->condition('mlid', $mlid)
+        ->execute();
+    }
+    $sandbox['progress']++;
+    $sandbox['current_mlid'] = $mlid;
+  }
+  $sandbox['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']);
+  // To display a message to the user when the update is completed, return it.
+  // If you do not want to display a completion message, simply return nothing.
+  return t('All menu link items with attached views have had their arguments converted for use with Drupal tokens.');
+}
+
