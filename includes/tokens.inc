@@ -41,7 +41,7 @@ function menu_views_tokens($type, $tokens, array $data = array(), array $options
   $parent = FALSE;
   // Menu link tokens.
   if ($type == 'menu-link' && !empty($data['menu-link'])) {
-    $link = (array) $data['menu-link'];    
+    $link = (array) $data['menu-link'];
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'node':
@@ -98,13 +98,13 @@ function _menu_views_tokens_callback(&$replacements, $data, $options) {
       if (is_bool($value)) {
         $value = $value ? t('TRUE') : t('FALSE');
       }
-      else if (is_object($value)) {
+      elseif (is_object($value)) {
         $value = t('Object');
       }
-      else if (is_array($value)) {
+      elseif (is_array($value)) {
         $value = t('Array');
       }
-      else if (is_null($value)) {
+      elseif (is_null($value)) {
         $value = t('NULL');
       }
       else {

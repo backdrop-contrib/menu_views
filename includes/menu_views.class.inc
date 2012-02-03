@@ -17,7 +17,7 @@ Class MenuViews {
   public $arguments = '';
   public $mlid = 0;
   public $tree = FALSE;
-  
+
   /**
    * Filters arguments and tokens for view argument.
    * Render a view inside a menu link.
@@ -37,7 +37,7 @@ Class MenuViews {
     }
     return implode('/', $args);
   }
-  
+
   public function load($form = array(), $form_state = array()) {
     $this->name = FALSE;
     $this->display = FALSE;
@@ -69,11 +69,11 @@ Class MenuViews {
         $this->$object = $form_state_values['menu_views'][$object];
       }
       // Check for an existing attached view in the menu link item.
-      else if ($form_original_values && isset($form_original_values['menu_views'][$object])) {
+      elseif ($form_original_values && isset($form_original_values['menu_views'][$object])) {
         $this->$object = $form_original_values['menu_views'][$object];
       }
       // Check for a default form value.
-      else if ($form_options && isset($form_options['menu_views'][$object])) {
+      elseif ($form_options && isset($form_options['menu_views'][$object])) {
         $this->$object = $form_options['menu_views'][$object];
       }
     }

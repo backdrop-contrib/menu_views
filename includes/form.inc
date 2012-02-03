@@ -52,13 +52,13 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
   if (isset($form['link_path']['#description'])) {
     $form['link_path']['#description'] .= ' ' . t('Enter %view to disable the link and display only the view.', array('%view' => '<view>'));
   }
-  
+
   // Unset the previous value so that the new values get saved.
   unset($form['options']['#value']['menu_views']);
-  
+
   // Get the values for the current, default or new attached view.
   $menu_views = menu_views($form, $form_state);
-  // Setup the form  
+  // Setup the form
   $form['options']['menu_views'] = array(
     '#access' => user_access('administer menu views'),
     '#type' => 'fieldset',
