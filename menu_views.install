@@ -38,9 +38,9 @@ function menu_views_update_7100() {
 }
 
 /**
- * Replaces attached view arguments (%N and %P) of menu link items with Token API equivalents.
+ * FIXED UPDATE: Replaces attached view arguments (%N and %P) of menu link items with Token API equivalents.
  */
-function menu_views_update_7101(&$sandbox) {
+function menu_views_update_7102(&$sandbox) {
   if (!isset($sandbox['progress'])) {
     $sandbox['progress'] = 0;
     $sandbox['current_mlid'] = 0;
@@ -51,9 +51,9 @@ function menu_views_update_7101(&$sandbox) {
   // Process twenty links at a time.
   $limit = 20;
   // Fetch links
-  $links = db_query_range("SELECT mlid, options FROM {menu_links} WHERE mlid > :mlid ORDER BY mlid", 0, $limit, array(':mlid' => $sandbox['current_mlid']))->fetchAllKeyed();
-  foreach ($links as $mlid => $options) {
-    $options = unserialize($options);
+  $links = db_query_range("SELECT mlid, options FROM {menu_links} WHERE mlid > :mlid ORDER BY mlid", 0, $limit, array(':mlid' => $sandbox['current_mlid']))->fetchAll();
+  foreach ($links as $link) {
+    $options = unserialize($link->options);
     if (isset($options['menu_views'])) {
       $arguments = array();
       if (isset($options['menu_views']['arguments'])) {
@@ -64,11 +64,46 @@ function menu_views_update_7101(&$sandbox) {
         ->fields(array(
           'options' => serialize($options),
         ))
-        ->condition('mlid', $mlid)
+        ->condition('mlid', $link->mlid)
         ->execute();
     }
     $sandbox['progress']++;
-    $sandbox['current_mlid'] = $mlid;
+    $sandbox['current_mlid'] = $link->mlid;
+  }
+  $sandbox['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']);
+  // To display a message to the user when the update is completed, return it.
+  // If you do not want to display a completion message, simply return nothing.
+  return t('All menu link items with attached views have had their arguments converted for use with Drupal tokens.');
+}
+
+/**
+ * Updates existing menu views to reference the proper mlid. When creating a new menu item, even if the attach view form was present, caused menu views to not save the mlid as it didn't yet exist. This update converts all existing menu views that have a referenced mlid of 0.
+ */
+function menu_views_update_7103(&$sandbox) {
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['current_mlid'] = 0;
+    // Only count links that possibly have a key class with a string value in
+    // its serialized options array.
+    $sandbox['max'] = db_query("SELECT COUNT(DISTINCT mlid) FROM {menu_links}")->fetchField();
+  }
+  // Process twenty links at a time.
+  $limit = 20;
+  // Fetch links
+  $links = db_query_range("SELECT mlid, options FROM {menu_links} WHERE mlid > :mlid ORDER BY mlid", 0, $limit, array(':mlid' => $sandbox['current_mlid']))->fetchAll();
+  foreach ($links as $link) {
+    $options = unserialize($link->options);
+    if (isset($options['menu_views'])) {
+      $options['menu_views']['mlid'] = $link->mlid;
+      db_update('menu_links')
+        ->fields(array(
+          'options' => serialize($options),
+        ))
+        ->condition('mlid', $link->mlid)
+        ->execute();
+    }
+    $sandbox['progress']++;
+    $sandbox['current_mlid'] = $link->mlid;
   }
   $sandbox['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']);
   // To display a message to the user when the update is completed, return it.
