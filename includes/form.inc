@@ -73,7 +73,7 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
   $options = array();
   $views = views_get_enabled_views();
   foreach ($views as $name => $view) {
-    $options[$name] = $view->human_name;
+    $options[$name] = $view->human_name . ' (' . $name . ')';
   }
   ksort($options);
   $form['options']['menu_views']['name'] = array(
@@ -92,7 +92,7 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
     $view = views_get_view($menu_views->name);
     $options = array();
     foreach ($view->display as $name => $display) {
-      $options[$name] = $display->display_title;
+      $options[$name] = $display->display_title . ' (' . $name . ')';
     }
     $form['options']['menu_views']['display'] = array(
       '#type' => 'select',
@@ -106,31 +106,39 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
         'wrapper' => 'menu-views',
       ),
     );
-  }
-  if ($menu_views->display) {
-    $form['options']['menu_views']['arguments'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Arguments'),
-      '#description' => t('You can reference the node associated with this menu link by using <code>[menu-link:node:nid]</code>.<br />You can reference the node associated with the parent of this menu link by using <code>[menu-link:parent:node:nid]</code>.'),
-      '#default_value' => $menu_views->arguments,
-    );
-    if (module_exists('token')) {
-      $form['options']['menu_views']['tokens'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Replacement Tokens'),
-        '#description' => t('Below are the list of available tokens to use for passing arguments to this attached view.<br /><br />You can reference the node associated with this menu link by using <code>[menu-link:node:nid]</code>.<br />You can reference the node associated with the parent of this menu link by using <code>[menu-link:parent:node:nid]</code>.'),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
+    if ($menu_views->display) {
+      $form['options']['menu_views']['arguments'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Arguments'),
+        '#description' => t('You can reference the node associated with this menu link by using <code>[menu-link:node:nid]</code>.<br />You can reference the node associated with the parent of this menu link by using <code>[menu-link:parent:node:nid]</code>.'),
+        '#default_value' => $menu_views->arguments,
       );
-      $form['options']['menu_views']['tokens']['tokens'] = array(
-        '#theme' => 'token_tree',
-        '#token_types' => array('menu-link'),
-      );
+      if (module_exists('token')) {
+        $form['options']['menu_views']['tokens'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Replacement Tokens'),
+          '#description' => t('Below are the list of available tokens to use for passing arguments to this attached view.<br /><br />You can reference the node associated with this menu link by using <code>[menu-link:node:nid]</code>.<br />You can reference the node associated with the parent of this menu link by using <code>[menu-link:parent:node:nid]</code>.'),
+          '#collapsible' => TRUE,
+          '#collapsed' => TRUE,
+        );
+        $form['options']['menu_views']['tokens']['tokens'] = array(
+          '#theme' => 'token_tree',
+          '#token_types' => array('menu-link'),
+        );
+      }
     }
   }
+  
   // Inject handlers
-  $form['#validate'] = array_merge(array('menu_views_menu_edit_item_validate'), $form['#validate']);
-  $form['#submit'] = array_merge(array('menu_views_menu_edit_item_submit'), $form['#submit']);
+  $form['#validate'] = array_merge($form['#validate'], array('menu_views_menu_edit_item_validate'));
+  
+  // Remove core submit handler and use this module's handler to ensure the mlid is saved to the view for new items.
+  foreach ($form['#submit'] as $key => $handle) {
+    if ($handle == 'menu_edit_item_submit') {
+      unset($form['#submit'][$key]);
+    }
+  }
+  $form['#submit'] = array_merge($form['#submit'], array('menu_views_menu_edit_item_submit'));
 }
 
 /**
@@ -156,16 +164,67 @@ function menu_views_menu_edit_item_validate($form, &$form_state) {
  * Submit handler for menu_edit_item form
  */
 function menu_views_menu_edit_item_submit($form, &$form_state) {
+  $item = &$form_state['values'];
+  
+  // Retrieve view information.
   $view = menu_views($form, $form_state);
+  
+  // Retrieve the original menu view information for this menu link.
+  $original = array();
+  if (isset($item['original_item']['options']['menu_views'])) {
+    $original = $item['original_item']['options']['menu_views'];
+  }
+    
+  // The value of "hidden" is the opposite of the value
+  // supplied by the "enabled" checkbox.
+  $item['hidden'] = (int) !$item['enabled'];
+  unset($item['enabled']);
+  
+  // Only set the title attribute if the menu_attributes moduule is not present.
+  if (!module_exists('menu_attributes')) {
+    $item['options']['attributes']['title'] = $item['description'];
+  }
+  
+  // Set the menu name and plid.
+  list($item['menu_name'], $item['plid']) = explode(':', $item['parent']);
+  
+  // Generate the new menu view information from the current form.
   $menu_views = array(
     'name' => $view->name,
     'display' => $view->display,
     'arguments' => $view->arguments,
-    // Force the original mlid to be saved.
-    'mlid' => $form_state['values']['original_item']['mlid'],
+    // The mlid should remain constant, do not use view information.
+    'mlid' => $item['mlid'],
   );
-  $form_state['values']['options']['menu_views'] = $menu_views;
-  if (isset($form_state['values']['menu_views'])) {
-    unset($form_state['values']['menu_views']);
+
+  // Save the menu view information in menu link options.
+  $item['options']['menu_views'] = $menu_views;
+  
+  // Unset the unecessary property.
+  if (isset($item['menu_views'])) {
+    unset($item['menu_views']);
   }
+  
+  // If this is a new menu link, save the initial menu link to return the mlid before we re-save the attached view.
+  if (!$menu_views['mlid']) {
+    $menu_views['mlid'] = menu_link_save($item);
+  }
+  
+  // Save the menu link and display the appropriate status message.
+  if (!menu_link_save($item)) {
+    drupal_set_message(t('There was an error saving the menu link.'), 'error');
+  }
+  else {
+    // Compare the original view information with the new one and determine if the menu's cache should be cleared.
+    $diff = array_diff_assoc($menu_views, $original);
+    if (!empty($diff)) {
+      // Clear the affected menu cache so the view can render properly.
+      menu_cache_clear($item['menu_name']);
+      _menu_clear_page_cache();
+    }
+    drupal_set_message(t('Your configuration has been saved.'));
+  }
+    
+  // Redirect to the menu list.
+  $form_state['redirect'] = 'admin/structure/menu/manage/' . $item['menu_name'];
 }

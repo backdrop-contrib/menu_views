@@ -81,6 +81,13 @@ Class MenuViews {
     if (!in_array($this->name, $views)) {
       $this->name = FALSE;
     }
+    if ($this->name === FALSE) {
+      $this->display = FALSE;
+      $this->arguments = '';
+    }
+    else if ($this->display === FALSE) {
+      $this->arguments = '';
+    }
     return $this;
   }
 }
