@@ -6,16 +6,6 @@
  */
 
 /**
- * Implements hook_theme_registry_alter().
- * Intercepts hook_link().
- */
-function menu_views_theme_registry_alter(&$registry) {
-  // Save previous value from registry in case another module/theme overwrites link
-  $registry['menu_views_link_default'] = $registry['link'];
-  $registry['link']['function'] = 'menu_views_link';
-}
-
-/**
  * Override theme_link().
  * Render a view inside a link (only menu items will have them, though).
  */
