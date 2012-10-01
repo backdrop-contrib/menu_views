@@ -1,0 +1,40 @@
+#menu-item-type {
+  background-image: none;
+  padding: 10px;
+  position: relative;
+}
+#menu-item-type .form-item {
+  position: static;
+}
+#menu-item-type .form-type-radios > label {
+  display: block;
+}
+#menu-item-type .form-type-radios .form-item {
+  margin-right: 10px;
+}
+#menu-item-type .progress-disabled {
+  float: none;
+}
+#menu-item-type .ajax-progress {
+  bottom: 10px;
+  left: 125px;
+  position: absolute;
+}
+#menu-item-type .ajax-progress .message {
+  padding: 0;
+}
+
+div.messages.status.view {
+  background-image: none;
+  -ms-border-radius: 10px;
+  -o-border-radius: 10px;
+  -moz-border-radius: 10px;
+  -webkit-border-radius: 10px;
+  border-radius: 10px;
+  cursor: default;
+  display: inline;
+  font-size: x-small;
+  font-style: italic;
+  margin: 0;
+  padding: 2px 8px;
+}
