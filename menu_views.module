@@ -49,6 +49,79 @@ function menu_views_theme_registry_alter(&$registry) {
   // Save previous value from registry in case another module/theme overwrites theme_menu_link() as well.
   $registry['menu_views_menu_link_default'] = $registry['menu_link'];
   $registry['menu_link']['function'] = 'menu_views_menu_link';
+  // Provide Superfish support.
+  if (isset($registry['superfish_menu_item_link'])) {
+    $registry['menu_views_superfish_menu_item_link_default'] = $registry['superfish_menu_item_link'];
+    $registry['superfish_menu_item_link']['function'] = 'menu_views_superfish_menu_item_link';
+  }
+}
+
+/**
+ * Implements theme_menu_link().
+ * Overrides default theming function to intercept views.
+ */
+function menu_views_menu_link(array $variables) {
+  // Only intercept if this menu link is a view.
+  if (isset($variables['element']) && $view = _menu_views_replace_menu_item($variables['element'])) {
+    return '<li' . drupal_attributes($variables['element']['#attributes']) . '>' . $view . "</li>\n";
+  }
+  // Otherwise, use the default theming function.
+  return theme('menu_views_menu_link_default', $variables);
+}
+
+/**
+ * Implements theme_superfish_menu_item_link().
+ * Overrides default theming function to intercept views.
+ */
+function menu_views_superfish_menu_item_link(array $variables) {
+  // Only intercept if this menu item link is a view.
+  if (isset($variables['menu_item']['link']) && $view = _menu_views_replace_menu_item($variables['menu_item']['link'])) {
+    return '<div class="menu-view">' . $view . '</div>';
+  }
+  // Otherwise, use the default theming function.
+  return theme('menu_views_superfish_menu_item_link_default', $variables);
+}
+
+function _menu_views_replace_menu_item($element) {
+  $output = FALSE;
+  // Only process menu links that are not on admin pages (see: http://drupal.org/node/1790444).
+  if (!path_is_admin(current_path())) {
+    $item = _menu_views_item($element);
+    if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
+      $element['#attributes']['class'][] = 'menu-views';
+      if ($view = views_get_view($item['view']['name'])) {
+        if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
+          $output = '';
+          $view->set_arguments(explode('/', _menu_views_tokenize_arguments($item)));
+          // Provide title options for the view.
+          if ((bool)$item['view']['settings']['title']) {
+            $title = $item['view']['settings']['title_override'];
+            if (empty($title)) {
+              $title = $view->get_title();
+            }
+            if (!empty($title)) {
+              $wrapper = $item['view']['settings']['title_wrapper'];
+              if ($wrapper === '0') {
+                $wrapper = FALSE;
+              }
+              elseif ($wrapper === '') {
+                $wrapper = 'h3';
+              }
+              if ($wrapper) {
+                $output .= '<' . $wrapper . (!empty($item['view']['settings']['title_classes']) ? ' class="' . $item['view']['settings']['title_classes'] . '"' : '') . '>';
+              }
+              $output .= $title;
+              if ($wrapper) {
+                $output .= '</' . $wrapper . '>';
+              }
+            }
+          }
+          $output .= $view->preview();
+        }
+      }
+    }
+  }
+  return $output;
 }
 
 function _menu_views_item(&$element = array(), &$form_state = array()) {
@@ -148,58 +221,6 @@ function _menu_views_tokenize_arguments($item, $human_readable = FALSE) {
   }
   return implode('/', $args);
 }
-
-/**
- * Implements theme_menu_link().
- * Overrides default theming function.
- */
-function menu_views_menu_link(array $variables) {
-  $element = $variables['element'];
-  $output = l($element['#title'], $element['#href'], $element['#localized_options']);
-  // Only process menu links that are not on admin pages (see: http://drupal.org/node/1790444).
-  if (!path_is_admin(current_path())) {
-    $item = _menu_views_item($element);
-    if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
-      $element['#attributes']['class'][] = 'menu-views';
-      if ($view = views_get_view($item['view']['name'])) {
-        if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
-          $output = '';
-          $view->set_arguments(explode('/', _menu_views_tokenize_arguments($item)));
-          // Provide title options for the view.
-          if ((bool)$item['view']['settings']['title']) {
-            $title = $item['view']['settings']['title_override'];
-            if (empty($title)) {
-              $title = $view->get_title();
-            }
-            if (!empty($title)) {
-              $wrapper = $item['view']['settings']['title_wrapper'];
-              if ($wrapper === '0') {
-                $wrapper = FALSE;
-              }
-              elseif ($wrapper === '') {
-                $wrapper = 'h3';
-              }
-              if ($wrapper) {
-                $output .= '<' . $wrapper . (!empty($item['view']['settings']['title_classes']) ? ' class="' . $item['view']['settings']['title_classes'] . '"' : '') . '>';
-              }
-              $output .= $title;
-              if ($wrapper) {
-                $output .= '</' . $wrapper . '>';
-              }
-            }
-          }
-          $output .= $view->preview();
-        }
-      }
-    }
-  }
-  $sub_menu = '';
-  if ($element['#below']) {
-    $sub_menu = drupal_render($element['#below']);
-  }
-  return '<li' . drupal_attributes($element['#attributes']) . '>' . $output . $sub_menu . "</li>\n";
-}
-
 
 /**
  * Implements hook_token_info().
