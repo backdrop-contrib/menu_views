@@ -129,21 +129,13 @@ function menu_views_update_7200(&$sandbox) {
   foreach ($links as $link) {
     $options = unserialize($link->options);
     if (isset($options['menu_views'])) {
-      $mlid = isset($options['menu_views']['mlid']) && !empty($options['menu_views']['mlid']) ? $options['menu_views']['mlid'] : $link->mlid;
-      $name = isset($options['menu_views']['name']) ? $options['menu_views']['name'] : '';
-      $display = isset($options['menu_views']['display']) ? $options['menu_views']['display'] : '';
-      $arguments = isset($options['menu_views']['arguments']) ? $options['menu_views']['arguments'] : '';
-      $item = array(
-        'mlid' => $mlid,
-        'type' => !empty($name) && !empty($display) ? 'view' : 'link',
-        'original_path' => $link->link_path != '<view>' ? $link->link_path : '',
-        'view' => array(
-          'name' => $name,
-          'display' => $display,
-          'arguments' => $arguments,
-          'title' => '<none>',
-        ),
-      );
+      $item = _menu_views_default_values();
+      $item['mlid'] = $link->mlid;
+      $item['type'] = !empty($name) && !empty($display) ? 'view' : 'link';
+      $item['original_path'] = $link->link_path != '<view>' ? $link->link_path : '';
+      $item['view']['name'] = isset($options['menu_views']['name']) ? $options['menu_views']['name'] : '';;
+      $item['view']['display'] = isset($options['menu_views']['display']) ? $options['menu_views']['display'] : '';
+      $item['view']['arguments'] = isset($options['menu_views']['arguments']) ? $options['menu_views']['arguments'] : '';
       $options['menu_views'] = $item;
       db_update('menu_links')
         ->fields(array(

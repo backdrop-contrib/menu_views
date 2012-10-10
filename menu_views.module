@@ -63,7 +63,11 @@ function menu_views_theme_registry_alter(&$registry) {
 function menu_views_menu_link(array $variables) {
   // Only intercept if this menu link is a view.
   if (isset($variables['element']) && $view = _menu_views_replace_menu_item($variables['element'])) {
-    return '<li' . drupal_attributes($variables['element']['#attributes']) . '>' . $view . "</li>\n";
+    $sub_menu = '';
+    if ($variables['element']['#below']) {
+      $sub_menu = drupal_render($variables['element']['#below']);
+    }
+    return '<li' . drupal_attributes($variables['element']['#attributes']) . '>' . $view . $sub_menu . "</li>\n";
   }
   // Otherwise, use the default theming function.
   return theme('menu_views_menu_link_default', $variables);
@@ -82,17 +86,54 @@ function menu_views_superfish_menu_item_link(array $variables) {
   return theme('menu_views_superfish_menu_item_link_default', $variables);
 }
 
+/**
+ * Implements hook_menu_breadcrumb_alter().
+ */
+function menu_views_menu_breadcrumb_alter(&$active_trail, $item) {
+  foreach ($active_trail as $key => $parent) {
+    if ($parent['link_path'] == '<view>') {
+      $menu_view = _menu_views_item($parent);
+      _menu_views_tokenize($menu_view);
+      // Remove this breadcrumb if the menu item view wants it hidden.
+      if (!(bool)$menu_view['view']['settings']['breadcrumb']) {
+        unset($active_trail[$key]);
+      }
+      else {
+        // Use overriden title if provided.
+        $title = $menu_view['view']['settings']['breadcrumb_title'];
+        // Use title provided by view next.
+        if (empty($title)) {
+          $view = views_get_view($menu_view['view']['name']);
+          if ($view && $view->access($menu_view['view']['display']) && $view->set_display($menu_view['view']['display'])) {
+            $title = $view->get_title();
+            $view->destroy();
+          }
+        }
+        // If title is still empty, just remove it from the breadcrumb.
+        if (empty($title)) {
+          unset($active_trail[$key]);
+        }
+        else {
+          $active_trail[$key]['title'] = $title;
+          $active_trail[$key]['href'] = $menu_view['view']['settings']['breadcrumb_path'];
+        }
+      }
+    }
+  }
+}
+
 function _menu_views_replace_menu_item($element) {
   $output = FALSE;
   // Only process menu links that are not on admin pages (see: http://drupal.org/node/1790444).
   if (!path_is_admin(current_path())) {
     $item = _menu_views_item($element);
+    _menu_views_tokenize($item);
     if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
       $element['#attributes']['class'][] = 'menu-views';
       if ($view = views_get_view($item['view']['name'])) {
         if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
           $output = '';
-          $view->set_arguments(explode('/', _menu_views_tokenize_arguments($item)));
+          $view->set_arguments(explode('/', $item['view']['arguments']));
           // Provide title options for the view.
           if ((bool)$item['view']['settings']['title']) {
             $title = $item['view']['settings']['title_override'];
@@ -117,6 +158,7 @@ function _menu_views_replace_menu_item($element) {
             }
           }
           $output .= $view->preview();
+          $view->destroy();
         }
       }
     }
@@ -124,9 +166,8 @@ function _menu_views_replace_menu_item($element) {
   return $output;
 }
 
-function _menu_views_item(&$element = array(), &$form_state = array()) {
-  // Default values.
-  $item = $default = array(
+function _menu_views_default_values() {
+  return array(
     'mlid' => 0,
     'type' => 'link',
     'tree' => FALSE,
@@ -136,6 +177,9 @@ function _menu_views_item(&$element = array(), &$form_state = array()) {
       'display' => FALSE,
       'arguments' => '',
       'settings' => array(
+        'breadcrumb' => TRUE,
+        'breadcrumb_title' => '',
+        'breadcrumb_path' => '<front>',
         'title' => FALSE,
         'title_wrapper' => '',
         'title_classes' => '',
@@ -143,6 +187,11 @@ function _menu_views_item(&$element = array(), &$form_state = array()) {
       ),
     ),
   );
+}
+
+function _menu_views_item(&$element = array(), &$form_state = array()) {
+  // Default values.
+  $item = $default = _menu_views_default_values();
   $provided = FALSE;
   // Attempt to load the menu view element for a link.
   if (isset($element['menu_views'])) {
@@ -178,7 +227,7 @@ function _menu_views_item(&$element = array(), &$form_state = array()) {
     foreach (array('mlid', 'type', 'original_path', 'view') as $property) {
       if (isset($provided[$property]) && !empty($provided[$property])) {
         if (is_array($item[$property])) {
-          $item[$property] = array_merge($item[$property], (array)$provided[$property]);
+          $item[$property] = _menu_views_array_merge_recursive($item[$property], $provided[$property]);
         }
         else {
           $item[$property] = $provided[$property];
@@ -192,34 +241,6 @@ function _menu_views_item(&$element = array(), &$form_state = array()) {
     $item['view'] = $default['view'];
   }
   return $item;
-}
-
-/**
- * Helper function to remove the attached view options from a menu item.
- */
-function _menu_views_remove_element($item) {
-  if ($item['element']) {
-    unset($item['element']);
-  }
-}
-
-/**
- * Helper function to tokenize an attached menu item view's arguments.
- */
-function _menu_views_tokenize_arguments($item, $human_readable = FALSE) {
-  $args = explode('/', $item['view']['arguments']);
-  if (count($args) && $item['mlid']) {
-    $context['menu-link'] = menu_link_load($item['mlid']);
-    $options = array(
-      'callback' => '_menu_views_tokens_callback',
-      'clear' => TRUE,
-      'human_readable' => $human_readable,
-    );
-    foreach ($args as $key => $arg) {
-      $args[$key] = token_replace($arg, $context, $options);
-    }
-  }
-  return implode('/', $args);
 }
 
 /**
@@ -307,11 +328,39 @@ function menu_views_tokens($type, $tokens, array $data = array(), array $options
 }
 
 /**
+ * Helper function to tokenize a menu item view arguments and settings.
+ * Alters the menu view item array and the original values are replaced.
+ */
+function _menu_views_tokenize(&$item, $human_readable = FALSE) {
+  if (isset($item['mlid']) && $item['mlid'] > 0) {
+    $context['menu-link'] = menu_link_load($item['mlid']);
+    $options = array(
+      'callback' => '_menu_views_tokenize_callback',
+      'human_readable' => $human_readable,
+    );
+    if (isset($item['view']['arguments']) && !empty($item['view']['arguments'])) {
+      $item['view']['arguments'] = token_replace($item['view']['arguments'], $context, array_merge($options, array('urlencode' => TRUE, 'clear' => TRUE)));
+    }
+    $tokenizable_settings = array('breadcrumb_title', 'breadcrumb_path', 'title_override');
+    if (isset($item['view']['settings'])) {
+      foreach ($item['view']['settings'] as $key => $value) {
+        if (in_array($key, $tokenizable_settings)) {
+          $item['view']['settings'][$key] = token_replace($value, $context, $options);
+        }
+      }
+    }
+  }
+}
+
+/**
  * Callback for human-readable token value replacements.
  */
-function _menu_views_tokens_callback(&$replacements, $data, $options) {
+function _menu_views_tokenize_callback(&$replacements, $data, $options) {
   foreach ($replacements as $token => $value) {
-    if ($options['human_readable']) {
+    if (isset($options['urlencode']) && $options['urlencode']) {
+      $replacements[$token] = urlencode($value);
+    }
+    if (isset($options['human_readable']) && $options['human_readable']) {
       if (is_bool($value)) {
         $value = $value ? t('TRUE') : t('FALSE');
       }
@@ -331,6 +380,43 @@ function _menu_views_tokens_callback(&$replacements, $data, $options) {
         $value = t('NULL');
       }
     }
-    $replacements[$token] = urlencode($value);
   }
+}
+
+/**
+ * array_merge_recursive does indeed merge arrays, but it converts values with duplicate
+ * keys to arrays rather than overwriting the value in the first array with the duplicate
+ * value in the second array, as array_merge does. I.e., with array_merge_recursive,
+ * this happens (documented behavior):
+ * 
+ * array_merge_recursive(array('key' => 'org value'), array('key' => 'new value'));
+ *     => array('key' => array('org value', 'new value'));
+ * 
+ * array_merge_recursive_distinct does not change the datatypes of the values in the arrays.
+ * Matching keys' values in the second array overwrite those in the first array, as is the
+ * case with array_merge, i.e.:
+ * 
+ * array_merge_recursive_distinct(array('key' => 'org value'), array('key' => 'new value'));
+ *     => array('key' => 'new value');
+ * 
+ * Parameters are passed by reference, though only for performance reasons. They're not
+ * altered by this function.
+ * 
+ * @param array $array1
+ * @param mixed $array2
+ * @author daniel@danielsmedegaardbuus.dk
+ * @return array
+ */
+function &_menu_views_array_merge_recursive(array &$array1, &$array2 = null)
+{
+  $merged = $array1;
+ 
+  if (is_array($array2))
+    foreach ($array2 as $key => $val)
+      if (is_array($array2[$key]))
+        $merged[$key] = is_array($merged[$key]) ? _menu_views_array_merge_recursive($merged[$key], $array2[$key]) : $array2[$key];
+      else
+        $merged[$key] = $val;
+ 
+  return $merged;
 }

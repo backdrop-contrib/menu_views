@@ -13,6 +13,33 @@ function _menu_views_form_parents($item) {
 }
 
 /**
+ * Helper function to append a token fieldset for elements that support token replacement.
+ */
+function _menu_views_form_element_token(&$element) {
+  static $enabled;
+  if (!isset($enabled)) {
+   $enabled = module_exists('token'); 
+  }
+  if ($enabled) {
+    $i = 0;
+    while (isset($element['tokens_' . $i])) {
+      $i++;
+    }
+    $element['tokens_' . $i] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Replacement Tokens'),
+      '#description' => t('Below are the list of available tokens to use for passing arguments to this attached view.<br /><br />You can reference the node associated with this menu link by using <code>[menu-link:node:nid]</code>.<br />You can reference the node associated with the parent of this menu link by using <code>[menu-link:parent:node:nid]</code>.'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $element['tokens_' . $i]['tokens'] = array(
+      '#theme' => 'token_tree',
+      '#token_types' => array('menu-link'),
+    );
+  }
+}
+
+/**
  * Implements hook_form_FORM_ID_alter().
  * Appends the attached view to the title of the menu item.
  */
@@ -26,6 +53,7 @@ function menu_views_form_menu_overview_form_alter(&$form, &$form_state) {
       $menu_item = &$element['#item'];
       // Only change the title for attached views
       $item = _menu_views_item($menu_item);
+      _menu_views_tokenize($item, TRUE);
       if ($item['type'] == 'view' && $item['view']['name']) {
         if ($view = views_get_view($item['view']['name'])) {
           if (!$attached) {
@@ -35,7 +63,7 @@ function menu_views_form_menu_overview_form_alter(&$form, &$form_state) {
           $name = $view->human_name ? $view->human_name : $view->name;
           if ($item['view']['display'] && isset($view->display[$item['view']['display']])) {
             $display = $view->display[$item['view']['display']]->display_title;
-            $arguments = _menu_views_tokenize_arguments($item, TRUE);
+            $arguments = $item['view']['arguments'];
             if (!empty($arguments)) {
               $arguments = ' : ' . $arguments;
             }
@@ -62,9 +90,18 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
   if (!user_access('administer menu views')) {
     return;
   }
-  $form['#attached']['css'][] = drupal_get_path('module', 'menu_views') . '/menu_views.admin.css';
+  
+  // Provide additions CSS and JavaScript support.
+  $module_path = drupal_get_path('module', 'menu_views');
+  $form['#attached']['css'][] = $module_path . '/menu_views.admin.css';
+  if (variable_get('admin_theme', 'bartik') == 'rubik') {
+    $form['#attached']['js'][] = $module_path . '/menu_views.admin.js';
+  }
   $form['#prefix'] = '<div id="menu-edit-item-wrapper">';
   $form['#suffix'] = '</div>';
+  // Alter terminology.
+  drupal_set_title('Edit menu item');
+  $form['parent']['#title'] = t('Parent Item');
   
   // Unset the previous value so that the new values get saved.
   if (isset($form['options']['#value']['menu_views'])) {
@@ -85,9 +122,23 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
     $form['link_path']['#default_value'] = '<view>';
   }
   
-  // Hide core fields.
-  $form['link_title']['#access'] = FALSE;
-  $form['link_path']['#access'] = FALSE;
+  
+  $form['item_container'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Menu item settings'),
+    '#parents' => array(),
+    '#weight' => 9,
+    '#attributes' => array('class' => array('edit-item-container')),
+  );
+  
+  $form['item_container']['enabled'] = $form['enabled'];
+  unset($form['enabled']);
+  $form['item_container']['expanded'] = $form['expanded'];
+  unset($form['expanded']);
+  $form['item_container']['parent'] = $form['parent'];
+  unset($form['parent']);
+  $form['item_container']['weight'] = $form['weight'];
+  unset($form['weight']);
   
   $form['menu_item_type'] = array(
     '#type' => 'radios',
@@ -108,21 +159,21 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
   $form['options']['menu_views'] = array(
     '#type' => 'container',
     '#tree' => TRUE,
-    '#weight' => -10,
+    '#weight' => 10,
   );
   $form['options']['menu_views']['original_path'] = array(
     '#type' => 'value',
     '#value' => $original_path,
   );
   $form['options']['menu_views']['view'] = array(
-    '#type' => 'fieldset',
+    '#type' => 'container',
     '#access' => FALSE,
   );
   $access = !($item['type'] == 'view');
   // Hide core fields for menu item.
   foreach (element_children($form) as $child) {
     // Skip options (handled below) and actions.
-    if ($child == 'menu_item_type' || $child == 'enabled' || $form[$child]['#type'] == 'actions' || $form[$child]['#type'] == 'hidden' || $form[$child]['#type'] == 'value') {
+    if ($child == 'menu_item_type' || $child == 'item_container' || $form[$child]['#type'] == 'actions' || $form[$child]['#type'] == 'hidden' || $form[$child]['#type'] == 'value') {
       continue;
     }
     $form[$child]['#access'] = $access;
@@ -143,7 +194,13 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
     $options[$name] = $view->human_name . ' (' . $name . ')';
   }
   ksort($options);
-  $form['options']['menu_views']['view']['name'] = array(
+  
+  $form['options']['menu_views']['view']['container'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('View'),
+    '#parents' => isset($form['options']['#tree']) && $form['options']['#tree'] ? array('options', 'menu_views', 'view') : array('menu_views', 'view'),
+  );
+  $form['options']['menu_views']['view']['container']['name'] = array(
     '#type' => 'select',
     '#title' => t('View'),
     '#empty_option' => t('- None -'),
@@ -161,7 +218,7 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
     foreach ($view->display as $name => $display) {
       $options[$name] = $display->display_title . ' (' . $name . ')';
     }
-    $form['options']['menu_views']['view']['display'] = array(
+    $form['options']['menu_views']['view']['container']['display'] = array(
       '#type' => 'select',
       '#title' => t('Display'),
       '#description' => t('Select a view display to use.'),
@@ -174,50 +231,46 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
       ),
     );
     if ($item['view']['display']) {
-      $form['options']['menu_views']['view']['arguments'] = array(
+      $form['options']['menu_views']['view']['container']['arguments'] = array(
         '#type' => 'textfield',
         '#title' => t('Arguments'),
         '#description' => t('You can reference the node associated with this menu link by using <code>[menu-link:node:nid]</code>.<br />You can reference the node associated with the parent of this menu link by using <code>[menu-link:parent:node:nid]</code>.'),
         '#default_value' => $item['view']['arguments'],
       );
-      if (module_exists('token')) {
-        $form['options']['menu_views']['view']['tokens'] = array(
-          '#type' => 'fieldset',
-          '#title' => t('Replacement Tokens'),
-          '#description' => t('Below are the list of available tokens to use for passing arguments to this attached view.<br /><br />You can reference the node associated with this menu link by using <code>[menu-link:node:nid]</code>.<br />You can reference the node associated with the parent of this menu link by using <code>[menu-link:parent:node:nid]</code>.'),
-          '#collapsible' => TRUE,
-          '#collapsed' => TRUE,
-        );
-        $form['options']['menu_views']['view']['tokens']['tokens'] = array(
-          '#theme' => 'token_tree',
-          '#token_types' => array('menu-link'),
-        );
-      }
-      // Advanced Render Options.
+      _menu_views_form_element_token($form['options']['menu_views']['view']['container']);
+      
+      // Advanced Settings.
       $form['options']['menu_views']['view']['settings'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Advanced Settings'),
-        '#collapsible' => TRUE,
-        '#collapsed' => !$item['view']['settings']['title'],
+        '#type' => 'container',
       );
-      $form['options']['menu_views']['view']['settings']['title'] = array(
+      $parents = isset($form['options']['#tree']) && $form['options']['#tree'] ? array('options', 'menu_views', 'view', 'settings') : array('menu_views', 'view', 'settings');
+      
+      $settings = &$form['options']['menu_views']['view']['settings'];
+
+      // View Title
+      $settings['title'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('View Title'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#parents' => $parents,
+      );
+      $settings['title']['title'] = array(
         '#type' => 'checkbox',
-        '#title' => t('Display Title'),
+        '#title' => t('Show view title'),
         '#default_value' => $item['view']['settings']['title'],
       );
-      $form['options']['menu_views']['view']['settings']['title_options'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Title Options'),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        '#parents' => isset($form['options']['#tree']) && $form['options']['#tree'] ? array('options', 'menu_views', 'view', 'settings') : array('menu_views', 'view', 'settings'),
+      $settings['title']['title_settings'] = array(
+        '#type' => 'container',
+        '#parents' => $parents,
         '#states' => array(
           'visible' => array(
            ':input[name="options[menu_views][view][settings][title]"]' => array('checked' => TRUE),
           ),
         ),
       );
-      $form['options']['menu_views']['view']['settings']['title_options']['title_wrapper'] = array(
+      $title_settings = &$settings['title']['title_settings'];
+      $title_settings['title_wrapper'] = array(
         '#type' => 'select',
         '#title' => t('Element Wrapper'),
         '#description' => t('Choose which element wrapper to use around the title of the view. Default: H3'),
@@ -238,19 +291,59 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
           'em' => 'EM',
         )),
       );
-      $form['options']['menu_views']['view']['settings']['title_options']['title_classes'] = array(
+      $title_settings['title_classes'] = array(
         '#type' => 'textfield',
         '#title' => t('Classes'),
         '#description' => t('Provide any additional classes, separated by spaces. Title must use the element wrapper above for this take effect.'),
         '#default_value' => $item['view']['settings']['title_classes'],
       );
-      $form['options']['menu_views']['view']['settings']['title_options']['title_override'] = array(
+      $title_settings['title_override'] = array(
         '#type' => 'textfield',
         '#title' => t('Override Title'),
         '#description' => t('Enter custom text to override title output. Default: Title will be provided from the view.'),
         '#default_value' => $item['view']['settings']['title_override'],
       );
+      _menu_views_form_element_token($title_settings);
       
+
+      // Breadcrumb
+      $settings['breadcrumb'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Breadcrumb Link'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#parents' => $parents,
+      );
+      $settings['breadcrumb']['breadcrumb'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Show breadcrumb link'),
+        '#default_value' => $item['view']['settings']['breadcrumb'],
+      );
+      $settings['breadcrumb']['breadcrumb_settings'] = array(
+        '#type' => 'container',
+        '#parents' => $parents,
+        '#states' => array(
+          'visible' => array(
+           ':input[name="options[menu_views][view][settings][breadcrumb]"]' => array('checked' => TRUE),
+          ),
+        ),
+      );
+      $breadcrumb_settings = &$settings['breadcrumb']['breadcrumb_settings'];
+      $breadcrumb_settings['breadcrumb_title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Link Title'),
+        '#description' => t('Title to use for the breadcrumb link. Note: If there is not a title provided by the view then the breadcrumb will not be displayed. Default: View Title'),
+        '#default_value' => $item['view']['settings']['breadcrumb_title'],
+      );
+      _menu_views_form_element_token($breadcrumb_settings);
+      
+      $breadcrumb_settings['breadcrumb_path'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Link Path'),
+        '#description' => t('Path to use for the breadcrumb link. Default: %front.', array('%front' => '<front>')),
+        '#default_value' => $item['view']['settings']['breadcrumb_path'],
+      );      
+      _menu_views_form_element_token($breadcrumb_settings);
     }
   }
   
@@ -320,6 +413,8 @@ function menu_views_menu_edit_item_submit($form, &$form_state) {
   list($values['menu_name'], $values['plid']) = explode(':', $values['parent']);
   
   // Recreate the menu view item data from the current form so only the important information is saved.
+  $default = _menu_views_default_values();
+  unset($default['tree']);
   $item = array(
     // The mlid should remain constant, always use the information provided by the menu module and not this one.
     'mlid' => $values['mlid'],
@@ -329,8 +424,7 @@ function menu_views_menu_edit_item_submit($form, &$form_state) {
   );
 
   // Save the menu view information in menu link options.
-  $values['options']['menu_views'] = $item;
-  
+  $values['options']['menu_views'] = _menu_views_array_merge_recursive($default, $item);
   // Remove this unecessary property from the values.
   if (isset($values['menu_views'])) {
     unset($values['menu_views']);
