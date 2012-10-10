@@ -150,41 +150,6 @@ function _menu_views_tokenize_arguments($item, $human_readable = FALSE) {
 }
 
 /**
- * Implements hook_preprocess_menu_link().
- */
-function menu_views_preprocess_menu_link(&$variables) {
-  // Only process menu links that are not on admin pages (see: http://drupal.org/node/1790444).
-  if (!path_is_admin(current_path())) {
-    return;
-  }
-  $element = &$variables['element'];
-  $item = _menu_views_item($element);
-  // If the menu link has a view attached and the path is not the special <view> path then clone and place it below this one.
-  if ($item['view']['name'] && $item['view']['display'] && $element['#href'] != '<view>') {
-    $child = $element;
-    $link = $child['#original_link'];
-    $child['#below'] = array();
-    $child['#href'] = '<view>';
-    $key = $link['mlid'] . '-menu_views';
-    // Support for nice menus module.
-    if (module_exists('nice_menus') && isset($element['#below']['#menu'])) {
-      $link['link_path'] = $link['router_path'] = $link['href'] = '<view>';
-      $link['has_children'] = 0;
-      $link['depth']++;
-      $element['#below']['#menu'][(50000 + $link['weight']) . ' ' . $link['title'] . ' ' . $link['mlid']] = array(
-        'link' => $link,
-        'below' => array(),
-      );
-    }
-    else {
-      $element['#below'][$key] = $child;
-    }
-    // Remove the view from this menu item.
-    // _menu_views_remove_element($item);
-  }
-}
-
-/**
  * Implements theme_menu_link().
  * Overrides default theming function.
  */
@@ -197,8 +162,33 @@ function menu_views_menu_link(array $variables) {
     if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
       $element['#attributes']['class'][] = 'menu-views';
       if ($view = views_get_view($item['view']['name'])) {
-        if ($view->access($item['view']['display'])) {
-          $output = $view->preview($item['view']['display'], explode('/', _menu_views_tokenize_arguments($item)));
+        if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
+          $output = '';
+          $view->set_arguments(explode('/', _menu_views_tokenize_arguments($item)));
+          // Provide title options for the view.
+          if ((bool)$item['view']['settings']['title']) {
+            $title = $item['view']['settings']['title_override'];
+            if (empty($title)) {
+              $title = $view->get_title();
+            }
+            if (!empty($title)) {
+              $wrapper = $item['view']['settings']['title_wrapper'];
+              if ($wrapper === '0') {
+                $wrapper = FALSE;
+              }
+              elseif ($wrapper === '') {
+                $wrapper = 'h3';
+              }
+              if ($wrapper) {
+                $output .= '<' . $wrapper . (!empty($item['view']['settings']['title_classes']) ? ' class="' . $item['view']['settings']['title_classes'] . '"' : '') . '>';
+              }
+              $output .= $title;
+              if ($wrapper) {
+                $output .= '</' . $wrapper . '>';
+              }
+            }
+          }
+          $output .= $view->preview();
         }
       }
     }

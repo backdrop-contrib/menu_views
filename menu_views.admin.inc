@@ -324,7 +324,7 @@ function menu_views_menu_edit_item_submit($form, &$form_state) {
     // The mlid should remain constant, always use the information provided by the menu module and not this one.
     'mlid' => $values['mlid'],
     'type' => $item['type'],
-    'original' => $item['original'],
+    'original_path' => $item['original_path'],
     'view' => $item['view'],
   );
 
