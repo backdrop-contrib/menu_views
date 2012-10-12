@@ -1,13 +1,17 @@
 #menu-item-type {
-  background-image: none;
-  padding: 10px;
+  background: #eee;
+  border: 1px solid #ddd;
+  color: #777;
+  margin: 10px 0;
+  padding: 5px 10px;
   position: relative;
 }
 #menu-item-type .form-item {
   position: static;
 }
 #menu-item-type .form-type-radios > label {
-  display: block;
+  float: left;
+  margin-right: 10px;
 }
 #menu-item-type .form-type-radios .form-item {
   margin-right: 10px;
@@ -16,9 +20,7 @@
   float: none;
 }
 #menu-item-type .ajax-progress {
-  bottom: 10px;
-  left: 125px;
-  position: absolute;
+  float: right;
 }
 #menu-item-type .ajax-progress .message {
   padding: 0;
@@ -37,4 +39,12 @@ div.messages.status.view {
   font-style: italic;
   margin: 0;
   padding: 2px 8px;
+}
+
+/* Fix fieldset legends for Rubik and Vertical Tabs */
+.vertical-tabs .vertical-tabs-panes .vertical-tabs-pane legend {
+  display: block;
+}
+.vertical-tabs > .vertical-tabs-panes > .vertical-tabs-pane > legend {
+  display: none;
 }

@@ -92,7 +92,7 @@ function menu_views_superfish_menu_item_link(array $variables) {
 function menu_views_menu_breadcrumb_alter(&$active_trail, $item) {
   foreach ($active_trail as $key => $parent) {
     if ($parent['link_path'] == '<view>') {
-      $menu_view = _menu_views_item($parent);
+      $menu_view = _menu_views_get_item($parent);
       _menu_views_tokenize($menu_view);
       // Remove this breadcrumb if the menu item view wants it hidden.
       if (!(bool)$menu_view['view']['settings']['breadcrumb']) {
@@ -126,7 +126,7 @@ function _menu_views_replace_menu_item($element) {
   $output = FALSE;
   // Only process menu links that are not on admin pages (see: http://drupal.org/node/1790444).
   if (!path_is_admin(current_path())) {
-    $item = _menu_views_item($element);
+    $item = _menu_views_get_item($element);
     _menu_views_tokenize($item);
     if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
       $element['#attributes']['class'][] = 'menu-views';
@@ -189,38 +189,68 @@ function _menu_views_default_values() {
   );
 }
 
-function _menu_views_item(&$element = array(), &$form_state = array()) {
+/**
+ * Helper function to determine whether the form menu item options are a tree.
+ */
+function _menu_views_options_tree($form) {
+  return ((isset($form['options']['#tree']) && $form['options']['#tree']) || (isset($form['#node']) && isset($form['menu']['link']['options']['#tree']) && $form['menu']['link']['options']['#tree']));
+}
+
+/**
+ * Helper function to return the menu view array from a menu item array or form array.
+ */
+function _menu_views_get_item(array &$element = array(), array &$form_state = array()) {
   // Default values.
   $item = $default = _menu_views_default_values();
   $provided = FALSE;
-  // Attempt to load the menu view element for a link.
-  if (isset($element['menu_views'])) {
-    $provided = &$element['menu_views'];
-  }
-  if (!$provided && isset($element['localized_options']['menu_views'])) {
-    $provided = &$element['localized_options']['menu_views'];
-  }
-  if (!$provided && isset($element['#localized_options']['menu_views'])) {
-    $provided = &$element['#localized_options']['menu_views'];
-  }
-  // If the menu view element were not set, attempt to determine if this is a form.
-  if (!$provided && isset($element['options'])) {
-    if (isset($element['options']['#tree']) && $element['options']['#tree']) {
-      $item['tree'] = TRUE;
+  // If $form_state is empty, this is a menu item.
+  if (empty($form_state)) {
+    if (isset($element['menu_views'])) {
+      $provided = &$element['menu_views'];
     }
+    if (!$provided && isset($element['localized_options']['menu_views'])) {
+      $provided = &$element['localized_options']['menu_views'];
+    }
+    if (!$provided && isset($element['#localized_options']['menu_views'])) {
+      $provided = &$element['#localized_options']['menu_views'];
+    }
+  }
+  // $form_state should be set when used in forms, otherwise this function will not work.
+  else {
+    $values = &$form_state['values'];
+    // Determine if this is a node form.
+    if (isset($element['#node'])) {
+      $element = &$element['menu']['link'];
+      $values = &$values['menu'];
+    }
+    // Save the menu item provided for initial form population.
     if (isset($element['original_item']['#value']['options']['menu_views'])) {
       $provided = &$element['original_item']['#value']['options']['menu_views'];
+      if (isset($provided['type'])) {
+        $item['type'] = $provided['type'];
+      }
     }
-    if ($item['tree'] && isset($form_state['values']['options']['menu_views'])) {
-      $provided = &$form_state['values']['options']['menu_views'];
+    // Save the menu item type before proceeding.
+    if (isset($values['menu_item_type'])) {
+      $item['type'] = $values['menu_item_type'];
     }
-    elseif (isset($form_state['values']['menu_views'])) {
-      $provided = &$form_state['values']['menu_views'];
+    // Determine if the options has a tree value.
+    if (_menu_views_options_tree($element)) {
+      $element = &$element['options'];
+      $values = &$values['options'];
     }
-    if (isset($form_state['values']['menu_item_type'])) {
-      $item['type'] = $form_state['values']['menu_item_type'];
+    if (!$provided && isset($element['menu_views'])) {
+      $provided = $element['menu_views'];
+    }
+    // Allow submitted values to override form values.
+    if (isset($values['menu_views'])) {
+      $provided = $values['menu_views'];
+    }
+    if (isset($provided['type']) && isset($item['type'])) {
+      $provided['type'] = $item['type'];
     }
   }
+  // If the menu view element were not set, attempt to determine if this is a form.
   // By default, the menu view returns default values (no view). If settings were provided by an element or form item, then use those.
   if ($provided) {
     // Extract available element settings to use for this menu view.
