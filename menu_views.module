@@ -12,7 +12,7 @@
  * Written and maintained by Mark Carver - LevelTen Interactive.
  * http://www.leveltendesign.com
  */
- 
+
 // Include admin form alter hooks.
 include_once('menu_views.admin.inc');
 
@@ -407,16 +407,17 @@ function _menu_views_tokenize_callback(&$replacements, $data, $options) {
  * @author daniel@danielsmedegaardbuus.dk
  * @return array
  */
-function &_menu_views_array_merge_recursive(array &$array1, &$array2 = null)
-{
+function &_menu_views_array_merge_recursive(array &$array1, &$array2 = NULL) {
   $merged = $array1;
- 
-  if (is_array($array2))
-    foreach ($array2 as $key => $val)
-      if (is_array($array2[$key]))
+  if (is_array($array2)) {
+    foreach ($array2 as $key => $val) {
+      if (is_array($array2[$key])) {
         $merged[$key] = is_array($merged[$key]) ? _menu_views_array_merge_recursive($merged[$key], $array2[$key]) : $array2[$key];
-      else
+      }        
+      else {
         $merged[$key] = $val;
- 
+      }
+    }
+  }
   return $merged;
 }

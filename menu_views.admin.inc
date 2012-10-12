@@ -4,7 +4,7 @@
  * @file
  * Form hooks for the menu_views module.
  */
- 
+
 /**
  * Helper function to determine where form values for menu views are located.
  */
@@ -18,7 +18,7 @@ function _menu_views_form_parents($item) {
 function _menu_views_form_element_token(&$element) {
   static $enabled;
   if (!isset($enabled)) {
-   $enabled = module_exists('token'); 
+    $enabled = module_exists('token'); 
   }
   if ($enabled) {
     $i = 0;
@@ -100,7 +100,7 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
   $form['#prefix'] = '<div id="menu-edit-item-wrapper">';
   $form['#suffix'] = '</div>';
   // Alter terminology.
-  drupal_set_title('Edit menu item');
+  drupal_set_title(t('Edit menu item'));
   $form['parent']['#title'] = t('Parent Item');
   
   // Unset the previous value so that the new values get saved.
