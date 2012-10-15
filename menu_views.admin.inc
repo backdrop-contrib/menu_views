@@ -240,7 +240,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   }
   
   // If the original path is empty and this is a node, use the node path.
-  if (empty($item['original_path']) && $node && $node->nid) {
+  if (empty($item['original_path']) && $node && isset($node->nid) && $node->nid) {
     $item['original_path'] = 'node/' . $node->nid;
   }
   
