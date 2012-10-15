@@ -21,29 +21,61 @@ function menu_views_form_menu_overview_form_alter(&$form, &$form_state) {
       // Only change the title for attached views
       $item = _menu_views_get_item($menu_item);
       _menu_views_tokenize($item, TRUE);
-      if ($item['type'] == 'view' && $item['view']['name']) {
-        if ($view = views_get_view($item['view']['name'])) {
-          if (!$attached) {
-            $form['#attached']['css'][] = drupal_get_path('module', 'menu_views') . '/menu_views.admin.css';
-            $attached = TRUE;
-          }
-          $name = $view->human_name ? $view->human_name : $view->name;
-          if ($item['view']['display'] && isset($view->display[$item['view']['display']])) {
-            $display = $view->display[$item['view']['display']]->display_title;
-            $arguments = $item['view']['arguments'];
-            if (!empty($arguments)) {
-              $arguments = ' : ' . $arguments;
-            }
-            $disabled = $menu_item['hidden'] ? ' (' . t('disabled') . ')' : '';
-            $title = '';
-            if ($menu_item['link_path'] != '<view>') {
-              // Must manually set the HTML here. Don't need the view showing up here by runnging it through l();
-              $title = '<a href="' . check_plain(url($menu_item['href'], $menu_item['localized_options'])) . '"' . drupal_attributes($menu_item['localized_options']['attributes']) . '>' . check_plain($menu_item['title']) . '</a> ';
-            }
-            $element['title']['#markup'] = $title . 'View: <div class="messages status view" title="' . $item['view']['name'] . ' : ' . $item['view']['display'] . ($item['view']['arguments'] ? ' : ' . $item['view']['arguments'] : '') . '">' . $name . ' : ' . $display . $arguments . $disabled . '</div>';
-          }
+      
+      if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
+        if (!$attached) {
+          $form['#attached']['css'][] = drupal_get_path('module', 'menu_views') . '/menu_views.admin.css';
+          $attached = TRUE;
         }
+        $title = '';
+        if ($view = views_get_view($item['view']['name'])) {
+          if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
+            $view->set_arguments(explode('/', $item['view']['arguments']));
+            // Provide title options for the view.
+            $title = $item['view']['settings']['title_override'];
+            if (empty($title)) {
+              $title = $view->get_title();
+            }
+          }
+          $view->destroy();
+        }
+        if (empty($title)) {
+          $title = t($item['view']['name']) . '-' . t($item['view']['display']);
+        }
+        $element['title'] = array(
+          '#prefix' => '<div class="view" title="View: ' . $item['view']['name'] . '-' . $item['view']['display'] . '">',
+          '#suffix' => '</div>',
+          '#markup' => '<strong>View:</strong> ' . $title . ($menu_item['hidden'] ? ' (' . t('disabled') . ')' : ''),
+        );
       }
+      
+      
+      
+      // if ($item['type'] == 'view' && $item['view']['name']) {
+      //   if ($view = views_get_view($item['view']['name'])) {
+      //     if (!$attached) {
+      //       $form['#attached']['css'][] = drupal_get_path('module', 'menu_views') . '/menu_views.admin.css';
+      //       $attached = TRUE;
+      //     }
+      //     $name = $view->human_name ? $view->human_name : $view->name;
+      //     if ($item['view']['display'] && isset($view->display[$item['view']['display']])) {
+      //       $display = $view->display[$item['view']['display']]->display_title;
+      //       $arguments = $item['view']['arguments'];
+      //       if (!empty($arguments)) {
+      //         $arguments = ' : ' . $arguments;
+      //       }
+      //       $disabled = ;
+      //       $title = '';
+      //       if ($menu_item['link_path'] != '<view>') {
+      //         // Must manually set the HTML here. Don't need the view showing up here by runnging it through l();
+      //         $title = '<a href="' . check_plain(url($menu_item['href'], $menu_item['localized_options'])) . '"' . drupal_attributes($menu_item['localized_options']['attributes']) . '>' . check_plain($menu_item['title']) . '</a> ';
+      //       }
+      //       $element['title']['#markup'] = $title . 'View: <div class="view" title="' . $item['view']['name'] . ' : ' . $item['view']['display'] . ($item['view']['arguments'] ? ' : ' . $item['view']['arguments'] : '') . '">' . $name . ' : ' . $display . $arguments . $disabled . '</div>';
+      //     }
+      //   }
+      // }
+      
+      
     }
   }
 }
@@ -247,6 +279,8 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   }
   $element['menu_item_settings']['expanded'] = $element['expanded'];
   unset($element['expanded']);
+  $type = isset($node) && isset($node->type) ? $node->type : 'main-menu:0';
+  $element['parent']['#options'] = _menu_views_parent_options(menu_get_menus(), $item['mlid'] ? $item : $type, $type);
   $element['menu_item_settings']['parent'] = $element['parent'];
   unset($element['parent']);
   $element['menu_item_settings']['weight'] = $element['weight'];
@@ -568,5 +602,125 @@ function _menu_views_form_submit($form, &$form_state) {
     );
     // Replace the menu views values in the menu item's options.
     $values['options']['menu_views'] = _menu_views_array_merge_recursive($default, $item);
+  }
+}
+
+
+/**
+ * Return a list of menu items that are valid possible parents for the given menu item.
+ *
+ * @param $menus
+ *   An array of menu names and titles, such as from menu_get_menus().
+ * @param $item
+ *   The menu item or the node type for which to generate a list of parents.
+ *   If $item['mlid'] == 0 then the complete tree is returned.
+ * @param $type
+ *   The node type for which to generate a list of parents.
+ *   If $item itself is a node type then $type is ignored.
+ * @return
+ *   An array of menu link titles keyed on the a string containing the menu name
+ *   and mlid. The list excludes the given item and its children.
+ *
+ * @todo This has to be turned into a #process form element callback. The
+ *   'menu_override_parent_selector' variable is entirely superfluous.
+ */
+function _menu_views_parent_options($menus, $item, $type = '') {
+  // The menu_links table can be practically any size and we need a way to
+  // allow contrib modules to provide more scalable pattern choosers.
+  // hook_form_alter is too late in itself because all the possible parents are
+  // retrieved here, unless menu_override_parent_selector is set to TRUE.
+  if (variable_get('menu_override_parent_selector', FALSE)) {
+    return array();
+  }
+
+  $available_menus = array();
+  if (!is_array($item)) {
+    // If $item is not an array then it is a node type.
+    // Use it as $type and prepare a dummy menu item for _menu_get_options().
+    $type = $item;
+    $item = array('mlid' => 0);
+  }
+  if (isset($item['mlid']) && $item['mlid']) {
+    $item = menu_link_load($item['mlid']);
+  }
+  if (empty($type)) {
+    // If no node type is set, use all menus given to this function.
+    $available_menus = $menus;
+  }
+  else {
+    // If a node type is set, use all available menus for this type.
+    $type_menus = variable_get('menu_options_' . $type, array('main-menu' => 'main-menu'));
+    foreach ($type_menus as $menu) {
+      $available_menus[$menu] = $menu;
+    }
+  }
+
+  return _menu_views_get_options($menus, $available_menus, $item);
+}
+
+/**
+ * Helper function to get the items of the given menu.
+ */
+function _menu_views_get_options($menus, $available_menus, $item) {
+  // If the item has children, there is an added limit to the depth of valid parents.
+  if (isset($item['parent_depth_limit'])) {
+    $limit = $item['parent_depth_limit'];
+  }
+  else {
+    $limit = _menu_parent_depth_limit($item);
+  }
+
+  $options = array();
+  foreach ($menus as $menu_name => $title) {
+    if (isset($available_menus[$menu_name])) {
+      $tree = menu_tree_all_data($menu_name, NULL);
+      $options[$menu_name . ':0'] = '<' . $title . '>';
+      _menu_views_parents_recurse($tree, $menu_name, '--', $options, $item['mlid'], $limit);
+    }
+  }
+  return $options;
+}
+
+/**
+ * Recursive helper function for menu_parent_options().
+ */
+function _menu_views_parents_recurse($tree, $menu_name, $indent, &$options, $exclude, $depth_limit) {
+  foreach ($tree as $data) {
+    if ($data['link']['depth'] > $depth_limit) {
+      // Don't iterate through any links on this level.
+      break;
+    }
+    if ($data['link']['mlid'] != $exclude && $data['link']['hidden'] >= 0) {
+      $item = _menu_views_get_item($data['link']);
+      _menu_views_tokenize($item);
+      if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
+        if ($view = views_get_view($item['view']['name'])) {
+          if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
+            $output = '';
+            $view->set_arguments(explode('/', $item['view']['arguments']));
+            // Provide title options for the view.
+            $title = $item['view']['settings']['title_override'];
+            if (empty($title)) {
+              $title = $view->get_title();
+            }
+            if (empty($title)) {
+              $title = t($item['view']['name']) . '-' . t($item['view']['display']);
+            }
+          }
+          $view->destroy();
+        }
+        $title = $indent . ' [view] ' . truncate_utf8($title, 30, TRUE, FALSE);
+      }
+      else {
+        $title = $indent . ' ' . truncate_utf8($data['link']['title'], 30, TRUE, FALSE);
+      }
+      if ($data['link']['hidden']) {
+        $title .= ' (' . t('disabled') . ')';
+      }
+      $options[$menu_name . ':' . $data['link']['mlid']] = $title;
+      if ($data['below']) {
+        _menu_views_parents_recurse($data['below'], $menu_name, $indent . '--', $options, $exclude, $depth_limit);
+      }
+    }
   }
 }

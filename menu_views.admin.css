@@ -26,19 +26,29 @@
   padding: 0;
 }
 
-div.messages.status.view {
-  background-image: none;
-  -ms-border-radius: 10px;
-  -o-border-radius: 10px;
-  -moz-border-radius: 10px;
-  -webkit-border-radius: 10px;
-  border-radius: 10px;
+#menu-overview div.view {
+  background: #eee;
+  border: 1px solid #ccc;
+  -ms-border-radius: 3px;
+  -o-border-radius: 3px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  border-radius: 3px;
+  color: #555;
   cursor: default;
-  display: inline;
-  font-size: x-small;
-  font-style: italic;
+  display: inline-block;
+  *display: inline;
+  *zoom: 1;
+  font-size: smaller;
+  line-height: 1em;
   margin: 0;
-  padding: 2px 8px;
+  padding: 4px 6px 2px;
+  text-shadow: 0 1px 0 #fff;
+}
+#menu-overview div.view strong {
+  background: #ddd;
+  margin-left: -6px;
+  padding: 2px 5px 1px;
 }
 
 /* Fix fieldset legends for Rubik and Vertical Tabs */
