@@ -6,23 +6,24 @@
   Drupal.behaviors.menuFieldsetSummaries = {
     attach: function (context) {
       $('fieldset.menu-link-form', context).drupalSetSummary(function (context) {
+        var summary = '';
         if ($('.form-item-menu-enabled input', context).is(':checked')) {
-          var menuItemType = $('#edit-menu-menu-item-type');
+          var menuItemType = $('.form-item-menu-menu-item-type', context);
           if (menuItemType.length) {
             if ($('input:checked', menuItemType).val() == 'view') {
-              var summary = '';
-              var name = $('#edit-menu-views-view-name, #edit-options-menu-views-view-name, #edit-menu-menu-views-view-name, #edit-menu-options-menu-views-view-name', context).first();
+              summary = '';
+              var name = $('.form-item-menu-menu-views-view-name select, .form-item-menu-options-menu-views-view-name select', context).first();
               if (name.length) {
                 var nameValue = Drupal.checkPlain($(':selected', name).val());
                 if (nameValue != '') {
                   summary = nameValue;
-                  var display = $('#edit-menu-views-view-display, #edit-options-menu-views-view-display, #edit-menu-menu-views-view-display, #edit-menu-options-menu-views-view-display', context).first();
+                  var display = $('.form-item-menu-menu-views-view-display select, .form-item-menu-options-menu-views-view-display select', context).first();
                   if (display.length) {
                     var displayValue = Drupal.checkPlain($(':selected', display).val());
                     if (displayValue != '') {
                       summary += '-' + displayValue;
                     }
-                    var arguments = $('#edit-menu-views-view-arguments, #edit-options-menu-views-view-arguments, #edit-menu-menu-views-view-arguments, #edit-menu-options-menu-views-view-arguments', context).first();
+                    var arguments = $('.form-item-menu-menu-views-view-arguments input, .form-item-menu-options-menu-views-view-arguments input', context).first();
                     if (arguments.length) {
                       var argumentsValue = Drupal.checkPlain(arguments.val());
                       if (argumentsValue != '') {
@@ -31,24 +32,39 @@
                     }
                   }
                 }
+                if (summary == '') {
+                  summary = Drupal.t('None Selected');
+                }
+                summary = Drupal.t('View') + ': ' + summary;
               }
-              if (summary == '') {
-                summary = Drupal.t('None');
-              }
-              return Drupal.t('View') + ': ' + summary;
             }
             else {
-              var title = $('.form-item-menu-link-title input', context);
-              if (title.length) {
-                return Drupal.checkPlain(title.val());
+              var linkTitle = $('.form-item-menu-link-title input', context);
+              if (linkTitle.length) {
+                summary = Drupal.checkPlain(linkTitle.val());
+                if (summary == '') {
+                  var nodeTitle = $('.form-item-title input');
+                  if (nodeTitle.length) {
+                    summary = Drupal.checkPlain(nodeTitle.val());
+                  }
+                  if (summary == '') {
+                    summary = '[' + Drupal.t('node:title') + ']';
+                  }
+                }
+              }
+              if (summary != '') {
+                summary = 'Link: ' + summary;
               }
             }
           }
         }
         else {
-          return Drupal.t('Not in menu');
+          summary = Drupal.t('Not in menu');
         }
-        return '';
+        if (summary == '') {
+          summary = 'Loading...';
+        }
+        return summary;
       });
     }
   };
