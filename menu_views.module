@@ -351,9 +351,8 @@ function menu_views_node_prepare($node) {
         }
       }
     }
-    if ($mlid) {
-      $item = menu_link_load($mlid);
-    }
+    // Load the menu link if one was found.
+    $item = $mlid ? menu_link_load($mlid) : array();
     // Set default values.
     $default = array(
       'link_title' => '',
