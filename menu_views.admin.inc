@@ -48,34 +48,6 @@ function menu_views_form_menu_overview_form_alter(&$form, &$form_state) {
           '#markup' => '<strong>View:</strong> ' . $title . ($menu_item['hidden'] ? ' (' . t('disabled') . ')' : ''),
         );
       }
-      
-      
-      
-      // if ($item['type'] == 'view' && $item['view']['name']) {
-      //   if ($view = views_get_view($item['view']['name'])) {
-      //     if (!$attached) {
-      //       $form['#attached']['css'][] = drupal_get_path('module', 'menu_views') . '/menu_views.admin.css';
-      //       $attached = TRUE;
-      //     }
-      //     $name = $view->human_name ? $view->human_name : $view->name;
-      //     if ($item['view']['display'] && isset($view->display[$item['view']['display']])) {
-      //       $display = $view->display[$item['view']['display']]->display_title;
-      //       $arguments = $item['view']['arguments'];
-      //       if (!empty($arguments)) {
-      //         $arguments = ' : ' . $arguments;
-      //       }
-      //       $disabled = ;
-      //       $title = '';
-      //       if ($menu_item['link_path'] != '<view>') {
-      //         // Must manually set the HTML here. Don't need the view showing up here by runnging it through l();
-      //         $title = '<a href="' . check_plain(url($menu_item['href'], $menu_item['localized_options'])) . '"' . drupal_attributes($menu_item['localized_options']['attributes']) . '>' . check_plain($menu_item['title']) . '</a> ';
-      //       }
-      //       $element['title']['#markup'] = $title . 'View: <div class="view" title="' . $item['view']['name'] . ' : ' . $item['view']['display'] . ($item['view']['arguments'] ? ' : ' . $item['view']['arguments'] : '') . '">' . $name . ' : ' . $display . $arguments . $disabled . '</div>';
-      //     }
-      //   }
-      // }
-      
-      
     }
   }
 }
@@ -205,7 +177,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     
   // Get values for the new menu views item, existing menu views item or submitted form values.
   $item = _menu_views_get_item($form, $form_state);
-  
+
   // Use the loaded node if it exists.
   $node = isset($form['#node']) ? $form['#node'] : FALSE;
   
