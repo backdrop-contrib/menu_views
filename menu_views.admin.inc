@@ -412,7 +412,7 @@ function _menu_views_form(&$item, &$element, &$form, &$form_state) {
         '#type' => 'fieldset',
         '#title' => t('View Title'),
         '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
+        '#collapsed' => TRUE,
         '#parents' => $parents,
       );
       $settings['title']['title'] = array(
@@ -468,9 +468,9 @@ function _menu_views_form(&$item, &$element, &$form, &$form_state) {
       // Breadcrumb
       $settings['breadcrumb'] = array(
         '#type' => 'fieldset',
-        '#title' => t('Breadcrumb Link'),
+        '#title' => t('Breadcrumb'),
         '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
+        '#collapsed' => TRUE,
         '#parents' => $parents,
       );
       $settings['breadcrumb']['breadcrumb'] = array(
