@@ -57,6 +57,36 @@ function menu_views_theme_registry_alter(&$registry) {
 }
 
 /**
+ * Implements HOOK_menu_position_rule_plugins().
+ */
+function menu_views_menu_position_rule_plugins() {
+  return array('menu_views' => array(
+    'form_callback' => 'menu_views_menu_position_rule_menu_views_form',
+    'condition_callback' => 'menu_views_menu_position_condition_menu_views',
+    'file' => 'menu_position.menu_views.inc',
+  ));
+}
+
+/**
+ * Implements HOOK_menu_position_rule_alter().
+ */
+function menu_views_menu_position_rule_alter(&$rule, &$context) {
+  // Don't process the Menu View items twice.
+  $processed = &drupal_static(__FUNCTION__, FALSE);
+  if ($processed) {
+    return;
+  }
+  $processed = TRUE;
+  
+  // Process Menu Views plugin in this rule.
+  if (isset($rule->conditions['menu_views']) && $rule->conditions['menu_views']['menu_views']) {
+    // dpm($rule);
+    // dpm($context);
+  }
+}
+
+
+/**
  * Implements theme_menu_link().
  * Overrides default theming function to intercept views.
  */
@@ -91,7 +121,7 @@ function menu_views_superfish_menu_item_link(array $variables) {
  */
 function menu_views_menu_breadcrumb_alter(&$active_trail, $item) {
   foreach ($active_trail as $key => $parent) {
-    if ($parent['link_path'] == '<view>') {
+    if (isset($parent['link_path']) && $parent['link_path'] == '<view>') {
       $menu_view = _menu_views_get_item($parent);
       _menu_views_tokenize($menu_view);
       // Remove this breadcrumb if the menu item view wants it hidden.
@@ -158,6 +188,22 @@ function _menu_views_replace_menu_item($element) {
             }
           }
           $output .= $view->preview();
+          if (count($view->result)) {
+            $view_data = _views_fetch_data($view->base_table);
+            if (isset($view_data['table']['entity type']) &&
+            isset($view_data['table']['base']['field']) &&
+            isset($view->result[0]->{$view_data['table']['base']['field']})
+            ) {
+              foreach ($view->result as $result) {
+                if (isset($result->{$view_data['table']['base']['field']})) {
+                  $entity = entity_load($view_data['table']['entity type'], array($result->{$view_data['table']['base']['field']}));
+                  $entity = $entity ? reset($entity) : FALSE;
+                  // dpm($entity);
+                }
+              }
+            }
+          }
+          // dpm($view_data);
           $view->destroy();
         }
       }
