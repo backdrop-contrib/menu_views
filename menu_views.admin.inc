@@ -213,7 +213,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     else {
       $element['link_path'] = array(
         '#type' => 'value',
-        '#value' => $node->nid ? 'node/' . $node->nid : '',
+        '#value' => $node && isset($node->nid) ? 'node/' . $node->nid : '',
       );
     }
   }
