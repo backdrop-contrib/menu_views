@@ -197,7 +197,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
       $element['link_path']['#default_value'] = $item['original_path'];
     }
     elseif ($item['type'] == 'view') {
-      if ($element['link_path']['#default_value'] != '<view>') {
+      if (isset($element['link_path']['#default_value']) && $element['link_path']['#default_value'] != '<view>') {
         $item['original_path'] = $element['link_path']['#default_value'];
       }
       $element['link_path']['#default_value'] = '<view>';
@@ -293,7 +293,8 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   // Show/Hide the core link form elements based on menu item type of: link or view.
   foreach (element_children($element) as $child) {
     // Skip options (handled below) and actions.
-    if ($child == 'menu_item_type' || $child == 'disabled' || $child == 'menu_item_settings' || !isset($element[$child]['#type']) || $element[$child]['#type'] == 'actions' || $element[$child]['#type'] == 'hidden' || $element[$child]['#type'] == 'value') {
+    $element_type = isset($element[$child]['#type']) ? $element[$child]['#type'] : '';
+    if ($child == 'menu_item_type' || $child == 'disabled' || $child == 'menu_item_settings' || empty($element_type) || $element_type == 'actions' || $element_type == 'hidden' || $element_type == 'value') {
       continue;
     }
     $element[$child]['#access'] = $visible;
@@ -301,7 +302,8 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   // Show/Hide the link options form elements based on menu item type of: link or view.
   foreach (element_children($element['options']) as $child) {
     // Skip menu_view options.
-    if ($child == 'menu_views' || !isset($element['options'][$child]['#type']) || $element['options'][$child]['#type'] == 'hidden' || $element['options'][$child]['#type'] == 'value') {
+    $element_type = isset($element['options'][$child]['#type']) ? $element['options'][$child]['#type'] : '';
+    if ($child == 'menu_views' || empty($element_type) || $element_type == 'hidden' || $element_type == 'value') {
       continue;
     }
     $element['options'][$child]['#access'] = $visible;
