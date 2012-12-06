@@ -56,34 +56,34 @@ function menu_views_theme_registry_alter(&$registry) {
   }
 }
 
-/**
- * Implements HOOK_menu_position_rule_plugins().
- */
-function menu_views_menu_position_rule_plugins() {
-  return array('menu_views' => array(
-    'form_callback' => 'menu_views_menu_position_rule_menu_views_form',
-    'condition_callback' => 'menu_views_menu_position_condition_menu_views',
-    'file' => 'menu_position.menu_views.inc',
-  ));
-}
-
-/**
- * Implements HOOK_menu_position_rule_alter().
- */
-function menu_views_menu_position_rule_alter(&$rule, &$context) {
-  // Don't process the Menu View items twice.
-  $processed = &drupal_static(__FUNCTION__, FALSE);
-  if ($processed) {
-    return;
-  }
-  $processed = TRUE;
-  
-  // Process Menu Views plugin in this rule.
-  if (isset($rule->conditions['menu_views']) && $rule->conditions['menu_views']['menu_views']) {
-    // dpm($rule);
-    // dpm($context);
-  }
-}
+// /**
+//  * Implements HOOK_menu_position_rule_plugins().
+//  */
+// function menu_views_menu_position_rule_plugins() {
+//   return array('menu_views' => array(
+//     'form_callback' => 'menu_views_menu_position_rule_menu_views_form',
+//     'condition_callback' => 'menu_views_menu_position_condition_menu_views',
+//     'file' => 'menu_position.menu_views.inc',
+//   ));
+// }
+// 
+// /**
+//  * Implements HOOK_menu_position_rule_alter().
+//  */
+// function menu_views_menu_position_rule_alter(&$rule, &$context) {
+//   // Don't process the Menu View items twice.
+//   $processed = &drupal_static(__FUNCTION__, FALSE);
+//   if ($processed) {
+//     return;
+//   }
+//   $processed = TRUE;
+//   
+//   // Process Menu Views plugin in this rule.
+//   if (isset($rule->conditions['menu_views']) && $rule->conditions['menu_views']['menu_views']) {
+//     // dpm($rule);
+//     // dpm($context);
+//   }
+// }
 
 
 /**
