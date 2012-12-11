@@ -163,7 +163,14 @@ function _menu_views_replace_menu_item($element) {
       if ($view = views_get_view($item['view']['name'])) {
         if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
           $output = '';
-          $view->set_arguments(explode('/', $item['view']['arguments']));
+          $arguments = explode('/', $item['view']['arguments']);
+          // Need to replace empty arguments with NULL values for views.
+          foreach ($arguments as $key => $value) {
+            if (empty($value)) {
+              $arguments[$key] = NULL;
+            }
+          }
+          $view->set_arguments($arguments);
           // Provide title options for the view.
           if ((bool)$item['view']['settings']['title']) {
             $title = $item['view']['settings']['title_override'];
@@ -188,22 +195,20 @@ function _menu_views_replace_menu_item($element) {
             }
           }
           $output .= $view->preview();
-          if (count($view->result)) {
-            $view_data = _views_fetch_data($view->base_table);
-            if (isset($view_data['table']['entity type']) &&
-            isset($view_data['table']['base']['field']) &&
-            isset($view->result[0]->{$view_data['table']['base']['field']})
-            ) {
-              foreach ($view->result as $result) {
-                if (isset($result->{$view_data['table']['base']['field']})) {
-                  $entity = entity_load($view_data['table']['entity type'], array($result->{$view_data['table']['base']['field']}));
-                  $entity = $entity ? reset($entity) : FALSE;
-                  // dpm($entity);
-                }
-              }
-            }
-          }
-          // dpm($view_data);
+          // if (count($view->result)) {
+          //   $view_data = _views_fetch_data($view->base_table);
+          //   if (isset($view_data['table']['entity type']) &&
+          //   isset($view_data['table']['base']['field']) &&
+          //   isset($view->result[0]->{$view_data['table']['base']['field']})
+          //   ) {
+          //     foreach ($view->result as $result) {
+          //       if (isset($result->{$view_data['table']['base']['field']})) {
+          //         $entity = entity_load($view_data['table']['entity type'], array($result->{$view_data['table']['base']['field']}));
+          //         $entity = $entity ? reset($entity) : FALSE;
+          //       }
+          //     }
+          //   }
+          // }
           $view->destroy();
         }
       }
