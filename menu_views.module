@@ -564,12 +564,11 @@ function menu_views_tokens($type, $tokens, array $data = array(), array $options
  * Helper function to tokenize a menu item view arguments and settings.
  * Alters the menu view item array and the original values are replaced.
  */
-function _menu_views_tokenize(&$item, $human_readable = FALSE) {
+function _menu_views_tokenize(&$item) {
   if (isset($item['mlid']) && $item['mlid'] > 0) {
     $context['menu-link'] = menu_link_load($item['mlid']);
     $options = array(
       'callback' => '_menu_views_tokenize_callback',
-      'human_readable' => $human_readable,
     );
     if (isset($item['view']['arguments']) && !empty($item['view']['arguments'])) {
       $item['view']['arguments'] = token_replace($item['view']['arguments'], $context, array_merge($options, array('urlencode' => TRUE, 'clear' => TRUE)));
@@ -592,26 +591,6 @@ function _menu_views_tokenize_callback(&$replacements, $data, $options) {
   foreach ($replacements as $token => $value) {
     if (isset($options['urlencode']) && $options['urlencode']) {
       $replacements[$token] = urlencode($value);
-    }
-    if (isset($options['human_readable']) && $options['human_readable']) {
-      if (is_bool($value)) {
-        $value = $value ? t('TRUE') : t('FALSE');
-      }
-      elseif (is_object($value)) {
-        $value = t('Object');
-      }
-      elseif (is_array($value)) {
-        $value = t('Array');
-      }
-      elseif (is_null($value)) {
-        $value = t('NULL');
-      }
-      else {
-        $value = (string) $value;
-      }
-      if ($value === '') {
-        $value = t('NULL');
-      }
     }
   }
 }
