@@ -351,6 +351,11 @@ function _menu_views_items_from_original_path($original_path, $menu_name = NULL)
  * Implements hook_node_prepare().
  */
 function menu_views_node_prepare($node) {
+  // Manually call menu's hook_node_prepare() if $node->menu doesn't exist.
+  // @see: drupal.org/node/1878968
+  if (!isset($node->menu) || empty($node->menu)) {
+    menu_node_prepare($node);
+  }
   if (isset($node->nid) && !$node->menu['mlid']) {
     // Prepare the node for the edit form so that $node->menu always exists.
     $menu_name = strtok(variable_get('menu_parent_' . $node->type, 'main-menu:0'), ':');
