@@ -56,36 +56,6 @@ function menu_views_theme_registry_alter(&$registry) {
   }
 }
 
-// /**
-//  * Implements HOOK_menu_position_rule_plugins().
-//  */
-// function menu_views_menu_position_rule_plugins() {
-//   return array('menu_views' => array(
-//     'form_callback' => 'menu_views_menu_position_rule_menu_views_form',
-//     'condition_callback' => 'menu_views_menu_position_condition_menu_views',
-//     'file' => 'menu_position.menu_views.inc',
-//   ));
-// }
-// 
-// /**
-//  * Implements HOOK_menu_position_rule_alter().
-//  */
-// function menu_views_menu_position_rule_alter(&$rule, &$context) {
-//   // Don't process the Menu View items twice.
-//   $processed = &drupal_static(__FUNCTION__, FALSE);
-//   if ($processed) {
-//     return;
-//   }
-//   $processed = TRUE;
-//   
-//   // Process Menu Views plugin in this rule.
-//   if (isset($rule->conditions['menu_views']) && $rule->conditions['menu_views']['menu_views']) {
-//     // dpm($rule);
-//     // dpm($context);
-//   }
-// }
-
-
 /**
  * Implements theme_menu_link().
  * Overrides default theming function to intercept views.
@@ -154,63 +124,46 @@ function menu_views_menu_breadcrumb_alter(&$active_trail, $item) {
 
 function _menu_views_replace_menu_item($element) {
   $output = FALSE;
-  // Only process menu links that are not on admin pages (see: http://drupal.org/node/1790444).
-  if (!path_is_admin(current_path())) {
-    $item = _menu_views_get_item($element);
-    _menu_views_tokenize($item);
-    if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
-      $element['#attributes']['class'][] = 'menu-views';
-      if ($view = views_get_view($item['view']['name'])) {
-        if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
-          $output = '';
-          $arguments = explode('/', $item['view']['arguments']);
-          // Need to replace empty arguments with NULL values for views.
-          foreach ($arguments as $key => $value) {
-            if (empty($value)) {
-              $arguments[$key] = NULL;
-            }
+  $item = _menu_views_get_item($element);
+  _menu_views_tokenize($item);
+  if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
+    $element['#attributes']['class'][] = 'menu-views';
+    if ($view = views_get_view($item['view']['name'])) {
+      if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
+        $output = '';
+        $arguments = explode('/', $item['view']['arguments']);
+        // Need to replace empty arguments with NULL values for views.
+        foreach ($arguments as $key => $value) {
+          if (empty($value)) {
+            $arguments[$key] = NULL;
           }
-          $view->set_arguments($arguments);
-          // Provide title options for the view.
-          if ((bool)$item['view']['settings']['title']) {
-            $title = $item['view']['settings']['title_override'];
-            if (empty($title)) {
-              $title = $view->get_title();
-            }
-            if (!empty($title)) {
-              $wrapper = $item['view']['settings']['title_wrapper'];
-              if ($wrapper === '0') {
-                $wrapper = FALSE;
-              }
-              elseif ($wrapper === '') {
-                $wrapper = 'h3';
-              }
-              if ($wrapper) {
-                $output .= '<' . $wrapper . (!empty($item['view']['settings']['title_classes']) ? ' class="' . $item['view']['settings']['title_classes'] . '"' : '') . '>';
-              }
-              $output .= $title;
-              if ($wrapper) {
-                $output .= '</' . $wrapper . '>';
-              }
-            }
-          }
-          $output .= $view->preview();
-          // if (count($view->result)) {
-          //   $view_data = _views_fetch_data($view->base_table);
-          //   if (isset($view_data['table']['entity type']) &&
-          //   isset($view_data['table']['base']['field']) &&
-          //   isset($view->result[0]->{$view_data['table']['base']['field']})
-          //   ) {
-          //     foreach ($view->result as $result) {
-          //       if (isset($result->{$view_data['table']['base']['field']})) {
-          //         $entity = entity_load($view_data['table']['entity type'], array($result->{$view_data['table']['base']['field']}));
-          //         $entity = $entity ? reset($entity) : FALSE;
-          //       }
-          //     }
-          //   }
-          // }
-          $view->destroy();
         }
+        $view->set_arguments($arguments);
+        // Provide title options for the view.
+        if ((bool)$item['view']['settings']['title']) {
+          $title = $item['view']['settings']['title_override'];
+          if (empty($title)) {
+            $title = $view->get_title();
+          }
+          if (!empty($title)) {
+            $wrapper = $item['view']['settings']['title_wrapper'];
+            if ($wrapper === '0') {
+              $wrapper = FALSE;
+            }
+            elseif ($wrapper === '') {
+              $wrapper = 'h3';
+            }
+            if ($wrapper) {
+              $output .= '<' . $wrapper . (!empty($item['view']['settings']['title_classes']) ? ' class="' . $item['view']['settings']['title_classes'] . '"' : '') . '>';
+            }
+            $output .= $title;
+            if ($wrapper) {
+              $output .= '</' . $wrapper . '>';
+            }
+          }
+        }
+        $output .= $view->preview();
+        $view->destroy();
       }
     }
   }
