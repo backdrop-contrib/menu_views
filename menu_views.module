@@ -64,6 +64,14 @@ function menu_views_menu_link(array $variables) {
   // Only intercept if this menu link is a view.
   if (isset($variables['element']) && $view = _menu_views_replace_menu_item($variables['element'])) {
     $sub_menu = '';
+    $classes = isset($variables['element']['#attributes']['class']) ? $variables['element']['#attributes']['class'] : array();
+    $item = _menu_views_get_item($variables['element']);
+    foreach (explode(' ', $item['view']['settings']['wrapper_classes']) as $class) {
+      if (!in_array($class, $classes)) {
+        $classes[] = $class;
+      }
+    }
+    $variables['element']['#attributes']['class'] = $classes;
     if ($variables['element']['#below']) {
       $sub_menu = drupal_render($variables['element']['#below']);
     }
@@ -80,7 +88,8 @@ function menu_views_menu_link(array $variables) {
 function menu_views_superfish_menu_item_link(array $variables) {
   // Only intercept if this menu item link is a view.
   if (isset($variables['menu_item']['link']) && $view = _menu_views_replace_menu_item($variables['menu_item']['link'])) {
-    return '<div class="menu-view">' . $view . '</div>';
+    $item = _menu_views_get_item($variables['menu_item']['link']);
+    return '<div' . drupal_attributes(array('class' => explode(' ', $item['view']['settings']['wrapper_classes']))) . '>' . $view . '</div>';
   }
   // Otherwise, use the default theming function.
   return theme('menu_views_superfish_menu_item_link_default', $variables);
@@ -180,6 +189,7 @@ function _menu_views_default_values() {
       'display' => FALSE,
       'arguments' => '',
       'settings' => array(
+        'wrapper_classes' => 'menu-views',
         'breadcrumb' => TRUE,
         'breadcrumb_title' => '',
         'breadcrumb_path' => '<front>',
