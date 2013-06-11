@@ -62,20 +62,24 @@ function menu_views_theme_registry_alter(&$registry) {
  */
 function menu_views_menu_link(array $variables) {
   // Only intercept if this menu link is a view.
-  if (isset($variables['element']) && $view = _menu_views_replace_menu_item($variables['element'])) {
-    $sub_menu = '';
-    $classes = isset($variables['element']['#attributes']['class']) ? $variables['element']['#attributes']['class'] : array();
-    $item = _menu_views_get_item($variables['element']);
-    foreach (explode(' ', $item['view']['settings']['wrapper_classes']) as $class) {
-      if (!in_array($class, $classes)) {
-        $classes[] = $class;
+  $view = _menu_views_replace_menu_item($variables['element']);
+  if ($view !== FALSE) {
+    if (!empty($view)) {
+      $sub_menu = '';
+      $classes = isset($variables['element']['#attributes']['class']) ? $variables['element']['#attributes']['class'] : array();
+      $item = _menu_views_get_item($variables['element']);
+      foreach (explode(' ', $item['view']['settings']['wrapper_classes']) as $class) {
+        if (!in_array($class, $classes)) {
+          $classes[] = $class;
+        }
       }
+      $variables['element']['#attributes']['class'] = $classes;
+      if ($variables['element']['#below']) {
+        $sub_menu = drupal_render($variables['element']['#below']);
+      }
+      return '<li' . drupal_attributes($variables['element']['#attributes']) . '>' . $view . $sub_menu . "</li>\n";
     }
-    $variables['element']['#attributes']['class'] = $classes;
-    if ($variables['element']['#below']) {
-      $sub_menu = drupal_render($variables['element']['#below']);
-    }
-    return '<li' . drupal_attributes($variables['element']['#attributes']) . '>' . $view . $sub_menu . "</li>\n";
+    return '';
   }
   // Otherwise, use the default theming function.
   return theme('menu_views_menu_link_default', $variables);
@@ -136,6 +140,7 @@ function _menu_views_replace_menu_item($element) {
   $item = _menu_views_get_item($element);
   _menu_views_tokenize($item);
   if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
+    $output = '';
     $element['#attributes']['class'][] = 'menu-views';
     if ($view = views_get_view($item['view']['name'])) {
       if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
