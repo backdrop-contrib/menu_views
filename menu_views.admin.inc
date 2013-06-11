@@ -587,7 +587,6 @@ function _menu_views_form_submit($form, &$form_state) {
     // The menu item will get updated with the rest of the values again shortly.
     if (!$values['mlid']) {
       $values['hidden'] = (int) !$values['enabled'];
-      unset($values['enabled']);
       $values['options']['attributes']['title'] = $values['description'];
       list($values['menu_name'], $values['plid']) = explode(':', $values['parent']);
       if (!$values['mlid'] = menu_link_save($values)) {
