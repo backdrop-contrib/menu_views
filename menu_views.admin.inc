@@ -175,7 +175,6 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     
   // Get values for the new menu views item, existing menu views item or submitted form values.
   $item = _menu_views_get_item($form, $form_state);
-
   // Use the loaded node if it exists.
   $node = isset($form['#node']) ? $form['#node'] : FALSE;
   
@@ -243,22 +242,6 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     }
   }
   
-  // Move general menu item settings into a container.
-  $element['menu_item_settings'] = array(
-    '#access' => $access,
-    '#type' => 'fieldset',
-    '#title' => t('Menu item settings'),
-    '#parents' => isset($form['#node']) ? array('menu') : array(),
-    '#weight' => $item['type'] == 'view' ? 50 : 1,
-    '#attributes' => array('id' => 'menu_item_settings', 'class' => array('menu-item-settings')),
-  );
-  if (isset($element['enabled'])) {
-    $element['menu_item_settings']['enabled'] = $element['enabled'];
-    unset($element['enabled']);
-  }
-  $element['menu_item_settings']['expanded'] = $element['expanded'];
-  unset($element['expanded']);
-  
   // Replace Parent Menu Options
   $options = _menu_views_parent_options(menu_get_menus(), $menu_link);
   if ($node && isset($node->type)) {
@@ -266,11 +249,29 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   }
   $element['parent']['#title'] = t('Parent Item');
   $element['parent']['#options'] = $options;
-  $element['menu_item_settings']['parent'] = $element['parent'];
-  unset($element['parent']);
+
+  // Move general menu item settings into a container.
+  if ($access) {
+    $element['menu_item_settings'] = array(
+      '#access' => $access,
+      '#type' => 'fieldset',
+      '#title' => t('Menu item settings'),
+      '#parents' => isset($form['#node']) ? array('menu') : array(),
+      '#weight' => $item['type'] == 'view' ? 50 : 1,
+      '#attributes' => array('id' => 'menu_item_settings', 'class' => array('menu-item-settings')),
+    );
+    if (isset($element['enabled'])) {
+      $element['menu_item_settings']['enabled'] = $element['enabled'];
+      unset($element['enabled']);
+    }
+    $element['menu_item_settings']['expanded'] = $element['expanded'];
+    unset($element['expanded']);
+    $element['menu_item_settings']['parent'] = $element['parent'];
+    unset($element['parent']);
+    $element['menu_item_settings']['weight'] = $element['weight'];
+    unset($element['weight']);
+  }
   
-  $element['menu_item_settings']['weight'] = $element['weight'];
-  unset($element['weight']);
   
   // Create a radio toggle for menu item types: link or view.
   $element['menu_item_type'] = array(

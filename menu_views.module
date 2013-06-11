@@ -236,6 +236,7 @@ function _menu_views_get_item(array &$element = array(), array &$form_state = ar
   }
   // $form_state should be set when used in forms, otherwise this function will not work.
   else {
+    $original_element = $element;
     $values = &$form_state['values'];
     // Determine if this is a node form.
     if (isset($element['#node'])) {
@@ -246,6 +247,9 @@ function _menu_views_get_item(array &$element = array(), array &$form_state = ar
     if (isset($values['menu_item_type'])) {
       $ajax_type = $values['menu_item_type'];
     }
+    elseif (isset($values['menu']['menu_views']['menu_item_type'])) {
+      $ajax_type = $values['menu']['menu_views']['menu_item_type'];
+    }
     // Save the menu item provided for initial form population.
     if (isset($element['original_item']['#value']['options']['menu_views'])) {
       $provided = &$element['original_item']['#value']['options']['menu_views'];
@@ -253,8 +257,14 @@ function _menu_views_get_item(array &$element = array(), array &$form_state = ar
         $item['type'] = $provided['type'];
       }
     }
+    elseif (isset($original_element['#node']->menu['options']['menu_views'])) {
+      $provided = &$original_element['#node']->menu['options']['menu_views'];
+      if (isset($provided['type'])) {
+        $item['type'] = $provided['type'];
+      }
+    }
     // Determine if the options has a tree value.
-    if (_menu_views_options_tree($element)) {
+    if (_menu_views_options_tree($original_element)) {
       $element = &$element['options'];
       $values = &$values['options'];
     }
@@ -262,7 +272,7 @@ function _menu_views_get_item(array &$element = array(), array &$form_state = ar
       if (isset($element['menu_views']['#value'])) {
         $provided = $element['menu_views']['#value'];
       }
-      else {
+      elseif (isset($element['menu_views'])) {
         $provided = $element['menu_views'];
       }
     }
