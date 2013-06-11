@@ -189,22 +189,22 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   }
   
   // Determine which menu item type is visible.
-  $visible = !($item['type'] == 'view');
+  $visible = !('view' === $item['type']);
   
   // Determine the correct link path to show or set values for.
   if (isset($element['link_path'])) {
-    if ($item['type'] == 'link' && $element['link_path']['#default_value'] == '<view>') {
+    if ('link' === $item['type'] && !empty($element['link_path']['#default_value']) && '<view>' === $element['link_path']['#default_value']) {
       $element['link_path']['#default_value'] = $item['original_path'];
     }
-    elseif ($item['type'] == 'view') {
-      if (isset($element['link_path']['#default_value']) && $element['link_path']['#default_value'] != '<view>') {
+    elseif ('view' === $item['type']) {
+      if (!empty($element['link_path']['#default_value']) && '<view>' !== $element['link_path']['#default_value']) {
         $item['original_path'] = $element['link_path']['#default_value'];
       }
       $element['link_path']['#default_value'] = '<view>';
     }
   }
   elseif ($node) {
-    if ($item['type'] == 'view') {
+    if ('view' === $item['type']) {
       $element['link_path'] = array(
         '#type' => 'value',
         '#value' => '<view>',
