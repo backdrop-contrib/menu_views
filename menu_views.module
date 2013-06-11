@@ -521,55 +521,35 @@ function menu_views_tokens($type, $tokens, array $data = array(), array $options
     $language_code = NULL;
   }
   $sanitize = !empty($options['sanitize']);
-
   $replacements = array();
-  $node = FALSE;
-  $parent = FALSE;
   // Menu link tokens.
   if ($type == 'menu-link' && !empty($data['menu-link'])) {
     $link = (array) $data['menu-link'];
-    foreach ($tokens as $name => $original) {
-      switch ($name) {
-        case 'node':
-          $node = menu_get_object('node', 1, $link['link_path']);
-          if ($node && $node->nid) {
-            $title = $node->title;
-            $replacements[$original] = $sanitize ? filter_xss($title) : $title;
-          }
-          else {
-            $replacements[$original] = NULL;
-          }
-          break;
-        case 'parent':
-          if (isset($link['plid']) &&
-            !empty($link['plid']) &&
-            ($parent = menu_link_load($link['plid'])) &&
-            ($node = menu_get_object('node', 1, $parent['link_path'])) &&
-            $node->nid
-          ) {
-            $title = $node->title;
-            $replacements[$original] = $sanitize ? filter_xss($title) : $title;
-          }
-          else {
-            $replacements[$original] = NULL;
-          }
-          break;
+    // menu-link:node tokens.
+    if ($node_tokens = token_find_with_prefix($tokens, 'node')) {
+      $node = menu_get_object('node', 1, $link['link_path']);
+      if (!$node && '<view>' === $link['link_path'] && !empty($link['options']['menu_views']['original_path'])) {
+        $node = menu_get_object('node', 1, $link['options']['menu_views']['original_path']);
+      }
+      if ($node) {
+        $replacements += token_generate('node', $node_tokens, array('node' => $node), $options);
+      }
+      else {
+        $replacements += token_generate('node', $node_tokens, array('node' => NULL), $options);
       }
     }
-    // Chained token relationships.
-    if (($node_tokens = token_find_with_prefix($tokens, 'node')) &&
-      $node = menu_get_object('node', 1, $link['link_path'])
-    ) {
-      $replacements += token_generate('node', $node_tokens, array('node' => $node), $options);
-    }
-    if (($parent_tokens = token_find_with_prefix($tokens, 'parent')) &&
-      isset($link['plid']) &&
-      !empty($link['plid']) &&
-      ($parent = menu_link_load($link['plid'])) &&
-      ($node = menu_get_object('node', 1, $parent['link_path'])) &&
-      $node->nid
-    ) {
-      $replacements += token_generate('node', $parent_tokens, array('node' => $node), $options);
+    // menu-link:parent tokens.
+    elseif (($parent_tokens = token_find_with_prefix($tokens, 'parent')) && !empty($link['plid']) && ($parent = menu_link_load($link['plid']))) {
+      $node = menu_get_object('node', 1, $parent['link_path']);
+      if (!$node && '<view>' === $parent['link_path'] && !empty($parent['options']['menu_views']['original_path'])) {
+        $node = menu_get_object('node', 1, $parent['options']['menu_views']['original_path']);
+      }
+      if ($node) {
+        $replacements += token_generate('node', $parent_tokens, array('node' => $node), $options);
+      }
+      else {
+        $replacements += token_generate('node', $parent_tokens, array('node' => NULL), $options);
+      }
     }
   }
   return $replacements;
