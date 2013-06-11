@@ -358,12 +358,25 @@ function _menu_views_form(&$item, &$element, &$form, &$form_state) {
     '#access' => $item['type'] == 'view' ? TRUE : FALSE,
   );
 
-  $options = array();
-  $views = views_get_enabled_views();
-  foreach ($views as $name => $view) {
-    $options[$name] = $view->human_name . ' (' . $name . ')';
+  $view_options = array();
+  $display_options = array();
+  foreach (views_get_enabled_views() as $view_name => $view) {
+    $view_options[$view_name] = $view->human_name . ' (' . $view_name . ')';
+    foreach ($view->display as $display_name => $display) {
+      if ('default' !== $display_name && 'page' !== $display_name && 'rss' !== $display_name) {
+        $display_options[$view_name][$display_name] = $display->display_title . ' (' . $display_name . ')';
+      }
+    }
+    // If view has no compatiable displays, remove the view as an option.
+    if (empty($display_options[$view_name])) {
+      unset($view_options[$view_name]);
+    }
+    else {
+      // Sort the displays for the view.
+      ksort($display_options[$view_name]);
+    }
   }
-  ksort($options);
+  ksort($view_options);
   $element['view']['container'] = array(
     '#type' => 'fieldset',
     '#title' => t('View'),
@@ -373,29 +386,24 @@ function _menu_views_form(&$item, &$element, &$form, &$form_state) {
     '#type' => 'select',
     '#title' => t('Name'),
     '#empty_option' => t('- Select View -'),
-    '#description' => t('Select the name of a view to use.'),
+    '#description' => t('Select the name of a view to use. The following view displays cannot be used: Master (default), Page and RSS. If the view or display you are looking for does not exist, create a block display in that view.'),
     '#required' => TRUE,
     '#default_value' => $item['view']['name'],
-    '#options' => $options,
+    '#options' => $view_options,
     '#ajax' => array(
       'callback' => '_menu_views_form_ajax',
       'wrapper' => 'menu-edit-item-wrapper',
     ),
   );
-  if ($item['view']['name']) {
-    $view = views_get_view($item['view']['name']);
-    $options = array();
-    foreach ($view->display as $name => $display) {
-      $options[$name] = $display->display_title . ' (' . $name . ')';
-    }
+  if ($item['view']['name'] && !empty($display_options[$item['view']['name']])) {
     $element['view']['container']['display'] = array(
       '#type' => 'select',
       '#title' => t('Display'),
-      '#description' => t('Select the name of a view display to use.'),
+      '#description' => t('Select the name of a view display to use. The following view displays cannot be used: Master (default), Page and RSS. If the view or display you are looking for does not exist, create a block display in that view.'),
       '#required' => TRUE,
       '#empty_option' => t('- Select Display -'),
       '#default_value' => $item['view']['display'],
-      '#options' => $options,
+      '#options' => $display_options[$item['view']['name']],
       '#ajax' => array(
         'callback' => '_menu_views_form_ajax',
         'wrapper' => 'menu-edit-item-wrapper',
