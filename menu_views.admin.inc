@@ -705,20 +705,17 @@ function _menu_views_parents_recurse($tree, $menu_name, $indent, &$options, $exc
       $item = _menu_views_get_item($data['link']);
       _menu_views_tokenize($item);
       if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
-        if ($view = views_get_view($item['view']['name'])) {
+        $title = t($item['view']['name']) . '-' . t($item['view']['display']);
+        $view_title = $item['view']['settings']['title_override'];
+        if (empty($view_title) && ($view = views_get_view($item['view']['name']))) {
           if ($view->access($item['view']['display']) && $view->set_display($item['view']['display'])) {
-            $output = '';
             $view->set_arguments(explode('/', $item['view']['arguments']));
-            // Provide title options for the view.
-            $title = $item['view']['settings']['title_override'];
-            if (empty($title)) {
-              $title = $view->get_title();
-            }
-            if (empty($title)) {
-              $title = t($item['view']['name']) . '-' . t($item['view']['display']);
-            }
+            $view_title = $view->get_title();
           }
           $view->destroy();
+        }
+        if (!empty($view_title)) {
+          $title = $view_title . ' (' . $title . ')';
         }
         $title = $indent . ' [view] ' . truncate_utf8($title, 30, TRUE, FALSE);
       }
