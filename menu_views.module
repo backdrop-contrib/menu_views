@@ -231,7 +231,7 @@ function _menu_views_default_values() {
  * Helper function to determine whether the form menu item options are a tree.
  */
 function _menu_views_options_tree($form) {
-  return ((isset($form['options']['#tree']) && $form['options']['#tree']) || (isset($form['#node']) && isset($form['menu']['link']['options']['#tree']) && $form['menu']['link']['options']['#tree']));
+  return ((isset($form['#node']) && isset($form['menu']['link']['options']['#tree']) && $form['menu']['link']['options']['#tree']) || (isset($form['options']['#tree']) && $form['options']['#tree']));
 }
 
 /**

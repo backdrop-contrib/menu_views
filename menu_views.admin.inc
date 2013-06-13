@@ -89,8 +89,9 @@ function _menu_views_form_parents($form) {
   $parents = array();
   if (isset($form['#node'])) {
     $parents[] = 'menu';
+    $parents[] = 'options';
   }
-  if (_menu_views_options_tree($form)) {
+  elseif (_menu_views_options_tree($form)) {
     $parents[] = 'options';
   }
   $parents[] = 'menu_views';
