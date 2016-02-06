@@ -295,8 +295,15 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   // Show/Hide the core link form elements based on menu item type of: link or view.
   foreach (element_children($element) as $child) {
     // Skip options (handled below) and actions.
-    $element_type = isset($element[$child]['#type']) ? $element[$child]['#type'] : '';
-    if ($child == 'menu_item_type' || $child == 'disabled' || $child == 'menu_item_settings' || empty($element_type) || $element_type == 'actions' || $element_type == 'hidden' || $element_type == 'value') {
+    $type = isset($element[$child]['#type']) ? $element[$child]['#type'] : '';
+    $ignore_children = array(
+      // Necessary menu children.
+      'menu_item_type', 'disabled', 'menu_item_settings',
+      // Necessary form children.
+      'form_build_id', 'form_token', 'form_id',
+    );
+    $ignore_types = array('actions', 'hidden', 'value');
+    if (in_array($child, $ignore_children) || !$type || in_array($type, $ignore_types)) {
       continue;
     }
     $element[$child]['#access'] = $visible;
@@ -304,8 +311,10 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   // Show/Hide the link options form elements based on menu item type of: link or view.
   foreach (element_children($element['options']) as $child) {
     // Skip menu_view options.
-    $element_type = isset($element['options'][$child]['#type']) ? $element['options'][$child]['#type'] : '';
-    if ($child == 'menu_views' || empty($element_type) || $element_type == 'hidden' || $element_type == 'value') {
+    $type = isset($element['options'][$child]['#type']) ? $element['options'][$child]['#type'] : '';
+    $ignore_children = array('menu_views');
+    $ignore_types = array('hidden', 'value');
+    if (in_array($child, $ignore_children) || !$type || in_array($type, $ignore_types)) {
       continue;
     }
     $element['options'][$child]['#access'] = $visible;
