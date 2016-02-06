@@ -272,8 +272,12 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     $element['menu_item_settings']['weight'] = $element['weight'];
     unset($element['weight']);
   }
-  
-  
+
+  // Add support for the xmlsitemap_menu module.
+  if (module_exists('xmlsitemap_menu')) {
+    $element['xmlsitemap']['#weight'] = $item['type'] === 'view' ? 51 : 30;
+  }
+
   // Create a radio toggle for menu item types: link or view.
   $element['menu_item_type'] = array(
     '#access' => $access,
@@ -300,6 +304,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     $ignore_children = array(
       'menu_item_type', 'disabled', 'menu_item_settings',
       'form_build_id', 'form_token', 'form_id',
+      'xmlsitemap',
     );
     $ignore_types = array('actions', 'hidden', 'value', 'token');
     if (in_array($child, $ignore_children) || !$type || in_array($type, $ignore_types)) {
