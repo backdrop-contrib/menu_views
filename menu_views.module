@@ -54,6 +54,11 @@ function menu_views_theme_registry_alter(&$registry) {
     $registry['menu_views_superfish_menu_item_link_default'] = $registry['superfish_menu_item_link'];
     $registry['superfish_menu_item_link']['function'] = 'menu_views_superfish_menu_item_link';
   }
+  // Provide Responsive Dropdown Menus support.
+  if (isset($registry['responsive_dropdown_menus_item_link'])) {
+    $registry['menu_views_responsive_dropdown_menus_item_link_default'] = $registry['responsive_dropdown_menus_item_link'];
+    $registry['responsive_dropdown_menus_item_link']['function'] = 'menu_views_responsive_dropdown_menus_item_link';
+  }
 }
 
 /**
@@ -97,6 +102,20 @@ function menu_views_superfish_menu_item_link(array $variables) {
   }
   // Otherwise, use the default theming function.
   return theme('menu_views_superfish_menu_item_link_default', $variables);
+}
+
+/**
+ * Implements theme_responsive_dropdown_menus_item_link().
+ * Overrides default theming function to intercept views.
+ */
+function menu_views_responsive_dropdown_menus_item_link(array $variables) {
+  // Only intercept if this menu item link is a view.
+  if (isset($variables['menu_item']['link']) && $view = _menu_views_replace_menu_item($variables['menu_item']['link'])) {
+    $item = _menu_views_get_item($variables['menu_item']['link']);
+    return '<div' . drupal_attributes(array('class' => explode(' ', $item['view']['settings']['wrapper_classes']))) . '>' . $view . '</div>';
+  }
+  // Otherwise, use the default theming function.
+  return theme('menu_views_responsive_dropdown_menus_item_link_default', $variables);
 }
 
 /**
