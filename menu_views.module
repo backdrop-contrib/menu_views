@@ -202,7 +202,7 @@ function _menu_views_replace_menu_item($element) {
           ),
         );
         // Add contextual links if allowed and if views_ui module is enabled.
-        if (user_access('access contextual links') && module_exists('views_ui')) {
+        if (module_exists('contextual_links') && user_access('access contextual links') && module_exists('views_ui')) {
           views_add_contextual_links($build, 'special_block_-exp', $view, $item['view']['display']);
           if (!empty($build['#contextual_links'])) {
             $build['#prefix'] = '<div class="contextual-links-region">';
