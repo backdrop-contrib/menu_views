@@ -61,7 +61,6 @@ function menu_views_form_menu_overview_form_alter(&$form, &$form_state) {
  */
 function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
   drupal_set_title(t('Edit menu item'));
-  $item = $form['original_item']['#value'];
   _menu_views_form_alter($form, $form, $form_state);
 }
 
@@ -74,7 +73,6 @@ function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
  */
 function menu_views_form_node_form_alter(&$form, &$form_state) {
   if (isset($form['menu']['link'])) {
-    $item = $form['#node']->menu;
     _menu_views_form_alter($form['menu']['link'], $form, $form_state);
   }
 }
