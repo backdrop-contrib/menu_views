@@ -296,13 +296,12 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   foreach (element_children($element) as $child) {
     // Skip options (handled below) and actions.
     $type = isset($element[$child]['#type']) ? $element[$child]['#type'] : '';
+    // Ensure necessary children are always present (regardless of their type).
     $ignore_children = array(
-      // Necessary menu children.
       'menu_item_type', 'disabled', 'menu_item_settings',
-      // Necessary form children.
       'form_build_id', 'form_token', 'form_id',
     );
-    $ignore_types = array('actions', 'hidden', 'value');
+    $ignore_types = array('actions', 'hidden', 'value', 'token');
     if (in_array($child, $ignore_children) || !$type || in_array($type, $ignore_types)) {
       continue;
     }
@@ -312,8 +311,9 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   foreach (element_children($element['options']) as $child) {
     // Skip menu_view options.
     $type = isset($element['options'][$child]['#type']) ? $element['options'][$child]['#type'] : '';
+    // Ensure necessary children are always present (regardless of their type).
     $ignore_children = array('menu_views');
-    $ignore_types = array('hidden', 'value');
+    $ignore_types = array('hidden', 'value', 'token');
     if (in_array($child, $ignore_children) || !$type || in_array($type, $ignore_types)) {
       continue;
     }
