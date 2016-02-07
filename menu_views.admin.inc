@@ -113,15 +113,12 @@ function _menu_views_form_tokens_ui(array &$element) {
       $i++;
     }
     $element['tokens_' . $i] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Replacement Tokens'),
-      '#description' => t('Below are the list of available tokens to use for passing arguments to this attached view.<br /><br />You can reference the node associated with this menu link by using <code>[menu-link:node:nid]</code>.<br />You can reference the node associated with the parent of this menu link by using <code>[menu-link:parent:node:nid]</code>.'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+      '#type' => 'container',
     );
     $element['tokens_' . $i]['tokens'] = array(
       '#theme' => 'token_tree',
       '#token_types' => array('menu-link'),
+      '#dialog' => TRUE,
     );
   }
 }
