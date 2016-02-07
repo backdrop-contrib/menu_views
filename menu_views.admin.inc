@@ -291,16 +291,26 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     '#weight' => -1000,
   );
   
+  // Determine if menu_attributes is enabled.
+  $menu_attributes = module_exists('menu_attributes');
+
   // Show/Hide the core link form elements based on menu item type of: link or view.
   foreach (element_children($element) as $child) {
     // Skip options (handled below) and actions.
     $type = isset($element[$child]['#type']) ? $element[$child]['#type'] : '';
+
     // Ensure necessary children are always present (regardless of their type).
     $ignore_children = array(
       'menu_item_type', 'disabled', 'menu_item_settings',
       'form_build_id', 'form_token', 'form_id',
       'xmlsitemap',
     );
+
+    // Allow the menu_attributes module to control the description field.
+    if ($menu_attributes) {
+      $ignore_children[] = 'description';
+    }
+
     $ignore_types = array('actions', 'hidden', 'value', 'token');
     if (in_array($child, $ignore_children) || !$type || in_array($type, $ignore_types)) {
       continue;
