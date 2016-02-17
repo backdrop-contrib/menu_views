@@ -230,8 +230,9 @@ function _menu_views_replace_menu_item($element) {
         $view->destroy();
       }
     }
+    return drupal_render($build);
   }
-  return drupal_render($build);
+  return FALSE;
 }
 
 function _menu_views_default_values() {
