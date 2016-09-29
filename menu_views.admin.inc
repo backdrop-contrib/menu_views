@@ -24,7 +24,7 @@ function menu_views_form_menu_overview_form_alter(&$form, &$form_state) {
       
       if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
         if (!$attached) {
-          $form['#attached']['css'][] = drupal_get_path('module', 'menu_views') . '/menu_views.admin.css';
+          $form['#attached']['css'][] = backdrop_get_path('module', 'menu_views') . '/css/menu_views.admin.css';
           $attached = TRUE;
         }
         $title = '';
@@ -60,7 +60,7 @@ function menu_views_form_menu_overview_form_alter(&$form, &$form_state) {
  * @see _menu_views_form_alter()
  */
 function menu_views_form_menu_edit_item_alter(&$form, &$form_state) {
-  drupal_set_title(t('Edit menu item'));
+  backdrop_set_title(t('Edit menu item'));
   _menu_views_form_alter($form, $form, $form_state);
 }
 
@@ -142,10 +142,10 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     if (isset($element['options']['#value']['menu_views'])) {
       unset($element['options']['#value']['menu_views']);
     }
-    $module_path = drupal_get_path('module', 'menu_views');
+    $module_path = backdrop_get_path('module', 'menu_views');
     // Attach CSS.
     $element['#attached']['css'][] = array(
-      'data' => $module_path . '/menu_views.admin.css',
+      'data' => $module_path . '/css/menu_views.admin.css',
       'type' => 'file',
       'group' => CSS_THEME,
       'weight' => 100
@@ -159,7 +159,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
       'type' => 'setting',
     );
     $element['#attached']['js'][] = array(
-      'data' => $module_path . '/menu_views.admin.js',
+      'data' => $module_path . '/js/menu_views.admin.js',
       'type' => 'file',
       'group' => JS_THEME,
       'weight' => 100,
@@ -219,7 +219,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   }
   
   // If this menu item is a view and user does not have permissions to administer menu views, restrict access to the form.
-  // Cannot use drupal_access_denied() because this form can also be inside a node edit form.
+  // Cannot use backdrop_access_denied() because this form can also be inside a node edit form.
   if ($item['type'] == 'view' && !$access) {
     $element['disabled'] = array(
       '#prefix' => '<div class="messages error">',
@@ -619,7 +619,7 @@ function _menu_views_form_submit($form, &$form_state) {
       $values['options']['attributes']['title'] = $values['description'];
       list($values['menu_name'], $values['plid']) = explode(':', $values['parent']);
       if (!$values['mlid'] = menu_link_save($values)) {
-        drupal_set_message(t('There was an error creating the menu item.'), 'error');
+        backdrop_set_message(t('There was an error creating the menu item.'), 'error');
       }
     }
     $default = _menu_views_default_values();

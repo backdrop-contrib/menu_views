@@ -9,8 +9,12 @@
  * parent item of the menu is a node page, the node id can be passed to the view as an argument using tokens.
  *
  * Original concept by Randall Knutson - LevelTen Interactive.
- * Written and maintained by Mark Carver - LevelTen Interactive.
+ * Written and maintained for Drupal by Mark Carver - LevelTen Interactive.
  * http://www.leveltendesign.com
+ * 
+ * Ported to Backdrop by Laryn Kragt Bakker - CEDC.org
+ * https://cedc.org
+ *
  */
 
 // Include admin form alter hooks.
@@ -22,7 +26,7 @@ include_once('menu_views.admin.inc');
 function menu_views_menu() {
   // Fake callback, needed for menu item add/edit validation.
   $items['<view>'] = array(
-    'page callback' => 'drupal_not_found',
+    'page callback' => 'backdrop_not_found',
     'access callback' => TRUE,
     'type' => MENU_CALLBACK,
   );
@@ -80,9 +84,9 @@ function menu_views_menu_link(array $variables) {
       }
       $variables['element']['#attributes']['class'] = $classes;
       if ($variables['element']['#below']) {
-        $sub_menu = drupal_render($variables['element']['#below']);
+        $sub_menu = backdrop_render($variables['element']['#below']);
       }
-      return '<li' . drupal_attributes($variables['element']['#attributes']) . '>' . $view . $sub_menu . "</li>\n";
+      return '<li' . backdrop_attributes($variables['element']['#attributes']) . '>' . $view . $sub_menu . "</li>\n";
     }
     return '';
   }
@@ -98,7 +102,7 @@ function menu_views_superfish_menu_item_link(array $variables) {
   // Only intercept if this menu item link is a view.
   if (isset($variables['menu_item']['link']) && $view = _menu_views_replace_menu_item($variables['menu_item']['link'])) {
     $item = _menu_views_get_item($variables['menu_item']['link']);
-    return '<div' . drupal_attributes(array('class' => explode(' ', $item['view']['settings']['wrapper_classes']))) . '>' . $view . '</div>';
+    return '<div' . backdrop_attributes(array('class' => explode(' ', $item['view']['settings']['wrapper_classes']))) . '>' . $view . '</div>';
   }
   // Otherwise, use the default theming function.
   return theme('menu_views_superfish_menu_item_link_default', $variables);
@@ -112,7 +116,7 @@ function menu_views_responsive_dropdown_menus_item_link(array $variables) {
   // Only intercept if this menu item link is a view.
   if (isset($variables['menu_item']['link']) && $view = _menu_views_replace_menu_item($variables['menu_item']['link'])) {
     $item = _menu_views_get_item($variables['menu_item']['link']);
-    return '<div' . drupal_attributes(array('class' => explode(' ', $item['view']['settings']['wrapper_classes']))) . '>' . $view . '</div>';
+    return '<div' . backdrop_attributes(array('class' => explode(' ', $item['view']['settings']['wrapper_classes']))) . '>' . $view . '</div>';
   }
   // Otherwise, use the default theming function.
   return theme('menu_views_responsive_dropdown_menus_item_link_default', $variables);
@@ -194,7 +198,7 @@ function _menu_views_replace_menu_item($element) {
               if (!empty($item['view']['settings']['title_classes'])) {
                 $title_attributes['class'] = array_filter(explode(' ', $item['view']['settings']['title_classes']));
                 foreach ($title_attributes['class'] as $key => $class) {
-                  $title_attributes['class'][$key] = drupal_html_class($class);
+                  $title_attributes['class'][$key] = backdrop_html_class($class);
                 }
               }
               $build['title'] = array(
@@ -230,7 +234,7 @@ function _menu_views_replace_menu_item($element) {
         $view->destroy();
       }
     }
-    return drupal_render($build);
+    return backdrop_render($build);
   }
   return FALSE;
 }
@@ -537,7 +541,7 @@ function menu_views_node_save($node) {
       // we need the mlid to be saved in the menu views options array.
       elseif (empty($link['mlid'])) {
         if (!menu_link_save($link)) {
-          drupal_set_message(t('There was an error saving the menu link.'), 'error');
+          backdrop_set_message(t('There was an error saving the menu link.'), 'error');
           return;
         }
       }
@@ -550,7 +554,7 @@ function menu_views_node_save($node) {
       // Replace the menu view options in the link and save it.
       $link['options']['menu_views'] = $item;
       if (!menu_link_save($link)) {
-        drupal_set_message(t('There was an error saving the menu link.'), 'error');
+        backdrop_set_message(t('There was an error saving the menu link.'), 'error');
       }
     }
   }
