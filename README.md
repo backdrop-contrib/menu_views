@@ -10,7 +10,7 @@ rendered on the front-end.
 
 ![Menu Views](https://github.com/backdrop-contrib/menu_views/blob/1.x-1.x/images/menu-views-screenshot.png "Menu Views example")
 
-##Features
+## Features
 
  - Permissions - Admins have the ability to grant select users with the ability
  to create or configure menu view items.
@@ -20,22 +20,22 @@ rendered on the front-end.
  - Tokens - Pass tokens to the view's arguments or title. Use tokens in the
  menu item's breadcrumb title or path.
 
-##Issues
+## Issues
 
 Bugs and Feature requests should be reported in the
 [Issue Queue](https://github.com/backdrop-contrib/menu_views/issues)
 
-##Current Maintainers
+## Current Maintainers
 
 - [Laryn Kragt Bakker](https://github.com/laryn) - [CEDC.org](https://cedc.org)
 
-##Credits
+## Credits
 
 - Ported to Backdrop CMS by [Laryn Kragt Bakker](https://github.com/laryn) - [CEDC.org](https://cedc.org).
 - Created and maintained for Drupal by [Mark Carver](https://github.com/markcarver) - [LevelTen Interactive](http://www.leveltendesign.com).
 - Original concept by Randall Knutson - [LevelTen Interactive](http://www.leveltendesign.com).
 
-##License
+## License
 
 This project is GPL v2 software. See the [LICENSE.txt](https://github.com/backdrop-contrib/menu_views/blob/1.x-1.x/LICENSE.txt) 
 file in this directory for complete text.
