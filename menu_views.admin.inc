@@ -153,7 +153,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     // Attach JavaScript.
     $element['#attached']['js'][] = array(
       'data' => array('menu_views' => array(
-        'admin_theme' => variable_get('admin_theme', 'bartik'),
+        'admin_theme' => config_get('system.core', 'admin_theme'),
         'node_form' => isset($form['#node']),
       )),
       'type' => 'setting',
@@ -494,21 +494,7 @@ function _menu_views_form(&$item, &$element, &$form, &$form_state) {
         '#title' => t('Element Wrapper'),
         '#description' => t('Choose which element wrapper to use around the title of the view. Default: H3'),
         '#default_value' => $item['view']['settings']['title_wrapper'],
-        '#options' => variable_get('views_field_rewrite_elements', array(
-          '' => t('- Use default -'),
-          '0' => t('- None -'),
-          'div' => 'DIV',
-          'span' => 'SPAN',
-          'h1' => 'H1',
-          'h2' => 'H2',
-          'h3' => 'H3',
-          'h4' => 'H4',
-          'h5' => 'H5',
-          'h6' => 'H6',
-          'p' => 'P',
-          'strong' => 'STRONG',
-          'em' => 'EM',
-        )),
+        '#options' => config_get('views.settings','views_field_rewrite_elements'),
       );
       $title['title_classes'] = array(
         '#type' => 'textfield',
@@ -650,19 +636,8 @@ function _menu_views_form_submit($form, &$form_state) {
  * @return
  *   An array of menu link titles keyed on the a string containing the menu name
  *   and mlid. The list excludes the given item and its children.
- *
- * @todo This has to be turned into a #process form element callback. The
- *   'menu_override_parent_selector' variable is entirely superfluous.
  */
 function _menu_views_parent_options($menus, $item, $type = '') {
-  // The menu_links table can be practically any size and we need a way to
-  // allow contrib modules to provide more scalable pattern choosers.
-  // hook_form_alter is too late in itself because all the possible parents are
-  // retrieved here, unless menu_override_parent_selector is set to TRUE.
-  if (variable_get('menu_override_parent_selector', FALSE)) {
-    return array();
-  }
-
   $available_menus = array();
   if (!is_array($item)) {
     // If $item is not an array then it is a node type.
@@ -679,7 +654,8 @@ function _menu_views_parent_options($menus, $item, $type = '') {
   }
   else {
     // If a node type is set, use all available menus for this type.
-    $type_menus = variable_get('menu_options_' . $type, array('main-menu' => 'main-menu'));
+    $node_type = node_type_load($type);
+    $type_menus = $node_type->settings['menu_options'];
     foreach ($type_menus as $menu) {
       $available_menus[$menu] = $menu;
     }
