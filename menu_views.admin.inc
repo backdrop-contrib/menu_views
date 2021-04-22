@@ -494,7 +494,21 @@ function _menu_views_form(&$item, &$element, &$form, &$form_state) {
         '#title' => t('Element Wrapper'),
         '#description' => t('Choose which element wrapper to use around the title of the view. Default: H3'),
         '#default_value' => $item['view']['settings']['title_wrapper'],
-        '#options' => config_get('views.settings','views_field_rewrite_elements'),
+        '#options' => array(
+          '' => t('- Use default -'),
+          '0' => t('- None -'),
+          'div' => 'DIV',
+          'span' => 'SPAN',
+          'h1' => 'H1',
+          'h2' => 'H2',
+          'h3' => 'H3',
+          'h4' => 'H4',
+          'h5' => 'H5',
+          'h6' => 'H6',
+          'p' => 'P',
+          'strong' => 'STRONG',
+          'em' => 'EM',
+        ),
       );
       $title['title_classes'] = array(
         '#type' => 'textfield',
