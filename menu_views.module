@@ -11,7 +11,7 @@
  * Original concept by Randall Knutson - LevelTen Interactive.
  * Written and maintained for Drupal by Mark Carver - LevelTen Interactive.
  * http://www.leveltendesign.com
- * 
+ *
  * Ported to Backdrop by Laryn Kragt Bakker - CEDC.org
  * https://cedc.org
  *
@@ -443,7 +443,7 @@ function _menu_views_items_from_original_path($original_path, $menu_name = NULL)
 /**
  * Implements hook_node_prepare().
  */
- 
+
 function menu_views_node_prepare($node) {
   // Manually call menu's hook_node_prepare() if $node->menu doesn't exist.
   // @see: drupal.org/node/1878968
@@ -451,9 +451,9 @@ function menu_views_node_prepare($node) {
     menu_node_prepare($node);
   }
   if (isset($node->nid) && !$node->menu['mlid']) {
-    
+
     $node_type = node_type_load($node->type);
-    
+
     // Prepare the node for the edit form so that $node->menu always exists.
     $menu_name = strtok($node_type->settings['menu_parent'], ':');
     $item = array();
@@ -602,7 +602,7 @@ function menu_views_tokens($type, $tokens, array $data = array(), array $options
   $url_options = array('absolute' => TRUE);
   if (isset($options['language'])) {
     $url_options['language'] = $options['language'];
-    $language_code = $options['language']->language;
+    $language_code = $options['language']->langcode;
   }
   else {
     $language_code = NULL;
