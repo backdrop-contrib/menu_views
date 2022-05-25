@@ -21,7 +21,7 @@ function menu_views_form_menu_overview_form_alter(&$form, &$form_state) {
       // Only change the title for attached views
       $item = _menu_views_get_item($menu_item);
       _menu_views_tokenize($item, TRUE);
-      
+
       if ($item['type'] == 'view' && $item['view']['name'] && $item['view']['display']) {
         if (!$attached) {
           $form['#attached']['css'][] = backdrop_get_path('module', 'menu_views') . '/css/menu_views.admin.css';
@@ -105,7 +105,7 @@ function _menu_views_form_parents($form) {
 function _menu_views_form_tokens_ui(array &$element) {
   static $enabled;
   if (!isset($enabled)) {
-    $enabled = module_exists('token'); 
+    $enabled = module_exists('token');
   }
   if ($enabled) {
     $i = 0;
@@ -168,12 +168,12 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     $element['#prefix'] = '<div id="menu-edit-item-wrapper">';
     $element['#suffix'] = '</div>';
   }
-    
+
   // Get values for the new menu views item, existing menu views item or submitted form values.
   $item = _menu_views_get_item($form, $form_state);
   // Use the loaded node if it exists.
   $node = isset($form['#node']) ? $form['#node'] : FALSE;
-  
+
   // Get the original menu link, if it exists.
   $menu_link = array();
   if (isset($form['original_item']['#value'])) {
@@ -182,10 +182,10 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
   elseif ($node && isset($node->menu)) {
     $menu_link = $node->menu;
   }
-  
+
   // Determine which menu item type is visible.
   $visible = !('view' === $item['type']);
-  
+
   // Determine the correct link path to show or set values for.
   if (isset($element['link_path'])) {
     if ('link' === $item['type'] && !empty($element['link_path']['#default_value']) && '<view>' === $element['link_path']['#default_value']) {
@@ -212,12 +212,12 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
       );
     }
   }
-  
+
   // If the original path is empty and this is a node, use the node path.
   if (empty($item['original_path']) && $node && isset($node->nid) && $node->nid) {
     $item['original_path'] = 'node/' . $node->nid;
   }
-  
+
   // If this menu item is a view and user does not have permissions to administer menu views, restrict access to the form.
   // Cannot use backdrop_access_denied() because this form can also be inside a node edit form.
   if ($item['type'] == 'view' && !$access) {
@@ -237,7 +237,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
       $form['menu']['enabled']['#access'] = $access;
     }
   }
-  
+
   // Replace Parent Menu Options
   $options = _menu_views_parent_options(menu_get_menus(), $menu_link);
   if ($node && isset($node->type)) {
@@ -290,7 +290,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     // Ensure this is rendered at the top of the form.
     '#weight' => -1000,
   );
-  
+
   // Determine if menu_attributes is enabled.
   $menu_attributes = module_exists('menu_attributes');
 
@@ -329,7 +329,7 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     }
     $element['options'][$child]['#access'] = $visible;
   }
-  
+
   // Place menu views in the options array.
   $element['options']['menu_views'] = array(
     '#type' => 'container',
@@ -337,10 +337,10 @@ function _menu_views_form_alter(array &$element, array &$form, array &$form_stat
     '#weight' => 10,
     '#access' => $access,
   );
-  
+
   // Create the actual Menu Views form.
   _menu_views_form($item, $element['options']['menu_views'], $form, $form_state);
-  
+
   // Add menu views form handlers.
   array_unshift($form['#validate'], '_menu_views_form_validate');
   array_unshift($form['#submit'], '_menu_views_form_submit');
@@ -372,7 +372,7 @@ function _menu_views_form(&$item, &$element, &$form, &$form_state) {
     '#type' => 'value',
     '#value' => $item['original_path'],
   );
-  
+
   // Container for the actual view settings.
   $element['view'] = array(
     '#type' => 'container',
@@ -438,18 +438,18 @@ function _menu_views_form(&$item, &$element, &$form, &$form_state) {
         '#default_value' => $item['view']['arguments'],
       );
       _menu_views_form_tokens_ui($element['view']['container']);
-      
+
       // Advanced Settings.
       $element['view']['settings'] = array(
         '#type' => 'container',
       );
       $parents = _menu_views_form_parents($form);
       $parents[] = 'settings';
-      
+
       $parents_name = $parents;
       $parents_name_first = array_shift($parents_name);
       $parents_name = $parents_name_first . '[' . implode('][', $parents_name);
-      
+
       $settings = &$element['view']['settings'];
 
       // Wrapper Class
@@ -494,7 +494,7 @@ function _menu_views_form(&$item, &$element, &$form, &$form_state) {
         '#title' => t('Element Wrapper'),
         '#description' => t('Choose which element wrapper to use around the title of the view. Default: H3'),
         '#default_value' => $item['view']['settings']['title_wrapper'],
-        '#options' => config_get('views.settings','views_field_rewrite_elements'),
+        '#options' => config_get('views.settings','field_rewrite_elements'),
       );
       $title['title_classes'] = array(
         '#type' => 'textfield',
@@ -545,7 +545,7 @@ function _menu_views_form(&$item, &$element, &$form, &$form_state) {
         '#title' => t('Link Path'),
         '#description' => t('Path to use for the breadcrumb link. Default: %front.', array('%front' => '<front>')),
         '#default_value' => $item['view']['settings']['breadcrumb_path'],
-      );      
+      );
       _menu_views_form_tokens_ui($breadcrumb);
     }
   }
@@ -587,15 +587,15 @@ function _menu_views_form_submit($form, &$form_state) {
   if (isset($form['#node'])) {
     $values = &$form_state['values']['menu'];
   }
-  
+
   // Get view settings from menu item.
   $item = _menu_views_get_item($form, $form_state);
-  
+
   // Remove this unecessary property from the values.
   if (isset($values['menu_views'])) {
     unset($values['menu_views']);
   }
-  
+
   // We really only want to intercept the menu edit item submit handle if this is actually a view.
   if ($item['type'] == 'view') {
     // If this is a new menu item, save a quick version of the menu item and return the mlid.
